@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
 import '../../core/services/quran_api.dart';
+import '../../core/storage/local_storage.dart';
 import 'ayah_screen.dart';
 
 class SurahListScreen extends StatefulWidget {
@@ -34,7 +37,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
       isLoading = true;
       errorMessage = null;
     });
-    
+
     try {
       final data = await QuranAPI.getAllSurahs();
       setState(() {
@@ -42,13 +45,15 @@ class _SurahListScreenState extends State<SurahListScreen> {
         filteredSurahs = data;
         isLoading = false;
         if (data.isEmpty) {
-          errorMessage = 'No surahs found. Please check your internet connection.';
+          errorMessage =
+              'No surahs found. Please check your internet connection.';
         }
       });
-    } catch (e) {
+    } catch (_) {
       setState(() {
         isLoading = false;
-        errorMessage = 'Failed to load Quran data. Please check your internet connection and try again.';
+        errorMessage =
+            'Failed to load Quran data. Please check your internet connection and try again.';
       });
     }
   }
@@ -61,9 +66,9 @@ class _SurahListScreenState extends State<SurahListScreen> {
       } else {
         filteredSurahs = surahs.where((surah) {
           return surah.englishName.toLowerCase().contains(query) ||
-                 surah.englishNameTranslation.toLowerCase().contains(query) ||
-                 surah.number.toString().contains(query) ||
-                 surah.name.contains(query);
+              surah.englishNameTranslation.toLowerCase().contains(query) ||
+              surah.number.toString().contains(query) ||
+              surah.name.contains(query);
         }).toList();
       }
     });
@@ -73,14 +78,91 @@ class _SurahListScreenState extends State<SurahListScreen> {
     _searchController.clear();
   }
 
+  Future<int?> _showAyahStartDialog(Surah surah) async {
+    final maxAyah = surah.numberOfAyahs > 0 ? surah.numberOfAyahs : 1;
+    final lastRead = LocalStorage.getLastRead();
+    final suggestedAyah = (lastRead['surah'] == surah.number)
+        ? (lastRead['ayah'] ?? 1)
+        : 1;
+    final initialAyah = suggestedAyah.clamp(1, maxAyah);
+    final controller = TextEditingController(text: '$initialAyah');
+    String? error;
+
+    return showDialog<int>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: Text('Start ${surah.englishName}'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Choose ayah (1 - $maxAyah)'),
+                  const SizedBox(height: 10),
+                  TextField(
+                    autofocus: true,
+                    controller: controller,
+                    keyboardType: TextInputType.number,
+                    textInputAction: TextInputAction.done,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: InputDecoration(
+                      hintText: 'Ayah number',
+                      errorText: error,
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, 1),
+                  child: const Text('Ayah 1'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final value = int.tryParse(controller.text.trim());
+                    if (value == null || value < 1 || value > maxAyah) {
+                      setStateDialog(() {
+                        error = 'Enter a number between 1 and $maxAyah';
+                      });
+                      return;
+                    }
+                    Navigator.pop(context, value);
+                  },
+                  child: const Text('Start'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+    const surface = Color(0xFF121417);
+    const card = Color(0xFF1B1E23);
+    const chip = Color(0xFF2A2D33);
+    const textPrimary = Color(0xFFF1F3F6);
+    const textSecondary = Color(0xFFB1B6C2);
+
     return Scaffold(
+      backgroundColor: surface,
       appBar: AppBar(
-        title: const Text('Quran Reading'),
+        title: const Text(
+          'Quran Reading',
+          style: TextStyle(color: textPrimary, fontWeight: FontWeight.w700),
+        ),
         centerTitle: true,
+        elevation: 0,
+        backgroundColor: surface,
+        iconTheme: const IconThemeData(color: textPrimary),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -91,14 +173,13 @@ class _SurahListScreenState extends State<SurahListScreen> {
       ),
       body: Column(
         children: [
-          // Search Bar
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
             decoration: BoxDecoration(
-              color: isDark ? Colors.grey[900] : Colors.white,
+              color: surface,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
@@ -106,20 +187,30 @@ class _SurahListScreenState extends State<SurahListScreen> {
             ),
             child: TextField(
               controller: _searchController,
+              style: const TextStyle(color: textPrimary),
               decoration: InputDecoration(
                 hintText: 'Search Surah by name or number...',
                 prefixIcon: const Icon(Icons.search, color: Colors.teal),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear),
+                        icon: const Icon(Icons.clear, color: textSecondary),
                         onPressed: _clearSearch,
                       )
                     : null,
                 filled: true,
-                fillColor: isDark ? Colors.grey[850] : Colors.grey[100],
+                fillColor: const Color(0xFF1E2228),
+                hintStyle: const TextStyle(color: textSecondary),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: Colors.white10),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: Colors.white10),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: Colors.teal, width: 1.4),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -128,164 +219,164 @@ class _SurahListScreenState extends State<SurahListScreen> {
               ),
             ),
           ),
-
-          // Results count
           if (filteredSurahs.isNotEmpty && _searchController.text.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Text(
-                'Found ${filteredSurahs.length} Surah(s)',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 13,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 2),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Found ${filteredSurahs.length} Surah(s)',
+                  style: const TextStyle(color: textSecondary, fontSize: 13),
                 ),
               ),
             ),
-
-          // Surah List
           Expanded(
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : errorMessage != null
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(32),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.error_outline,
-                                size: 64,
-                                color: Colors.grey[400],
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                errorMessage!,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: isDark ? Colors.grey[400] : Colors.grey[600],
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 64,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(errorMessage!, textAlign: TextAlign.center),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: loadSurahs,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : filteredSurahs.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.search_off,
+                          size: 64,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No results found',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Try a different search term',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: filteredSurahs.length,
+                    padding: const EdgeInsets.all(16),
+                    itemBuilder: (context, index) {
+                      final surah = filteredSurahs[index];
+                      return Card(
+                        color: card,
+                        elevation: 0,
+                        margin: const EdgeInsets.only(bottom: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          side: const BorderSide(color: Colors.white10),
+                        ),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                          leading: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: chip,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${surah.number}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: textPrimary,
                                 ),
                               ),
-                              const SizedBox(height: 24),
-                              ElevatedButton.icon(
-                                onPressed: loadSurahs,
-                                icon: const Icon(Icons.refresh),
-                                label: const Text('Retry'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.teal,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 32,
-                                    vertical: 12,
+                            ),
+                          ),
+                          title: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  surah.englishName,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 18,
+                                    color: textPrimary,
                                   ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                surah.name,
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                  color: textPrimary,
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                      )
-                    : filteredSurahs.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.search_off,
-                                  size: 64,
-                                  color: Colors.grey[400],
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'No results found',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Try a different search term',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[500],
-                                  ),
-                                ),
-                              ],
+                          subtitle: Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              '${surah.englishNameTranslation} • ${surah.numberOfAyahs} Ayahs',
+                              style: const TextStyle(
+                                color: textSecondary,
+                                fontSize: 13,
+                              ),
                             ),
-                          )
-                        : ListView.builder(
-                            itemCount: filteredSurahs.length,
-                            padding: const EdgeInsets.all(16),
-                            itemBuilder: (context, index) {
-                              final surah = filteredSurahs[index];
-                              return Card(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                child: ListTile(
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 12,
+                          ),
+                          trailing: Icon(
+                            Icons.chevron_right_rounded,
+                            color: Colors.white38,
+                          ),
+                          onTap: () {
+                            _showAyahStartDialog(surah).then((ayah) {
+                              if (ayah == null || !context.mounted) return;
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => AyahScreen(
+                                    surahNumber: surah.number,
+                                    surahName: surah.englishName,
+                                    initialAyahIndex: ayah - 1,
                                   ),
-                                  leading: Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: Colors.teal.withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        '${surah.number}',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.teal,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  title: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        surah.englishName,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                      Text(
-                                        surah.name,
-                                        style: const TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  subtitle: Padding(
-                                    padding: const EdgeInsets.only(top: 4),
-                                    child: Text(
-                                      '${surah.englishNameTranslation} • ${surah.numberOfAyahs} Ayahs',
-                                      style: TextStyle(
-                                        color: isDark ? Colors.grey[400] : Colors.grey[600],
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ),
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => AyahScreen(
-                                          surahNumber: surah.number,
-                                          surahName: surah.englishName,
-                                        ),
-                                      ),
-                                    );
-                                  },
                                 ),
                               );
-                            },
-                          ),
+                            });
+                          },
+                        ),
+                      );
+                    },
+                  ),
           ),
         ],
       ),

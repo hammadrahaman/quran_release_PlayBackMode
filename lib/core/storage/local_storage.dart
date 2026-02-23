@@ -14,8 +14,7 @@ class LocalStorage {
   static void setDailyGoal(int goal) => _settings.put('dailyGoal', goal);
 
   // Theme
-  static bool isDarkMode() =>
-      _settings.get('isDarkMode', defaultValue: false);
+  static bool isDarkMode() => _settings.get('isDarkMode', defaultValue: false);
   static void setDarkMode(bool isDark) => _settings.put('isDarkMode', isDark);
 
   // Font Size (for Arabic text)

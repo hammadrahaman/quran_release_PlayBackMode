@@ -10,11 +10,15 @@ class QuranAPI {
 
   static Future<void> _loadLocalData() async {
     if (_cachedArabicData == null) {
-      final arabicString = await rootBundle.loadString('assets/data/quran/quran_arabic.json');
+      final arabicString = await rootBundle.loadString(
+        'assets/data/quran/quran_arabic.json',
+      );
       _cachedArabicData = json.decode(arabicString);
     }
     if (_cachedEnglishData == null) {
-      final englishString = await rootBundle.loadString('assets/data/quran/quran_english.json');
+      final englishString = await rootBundle.loadString(
+        'assets/data/quran/quran_english.json',
+      );
       _cachedEnglishData = json.decode(englishString);
     }
   }
@@ -28,30 +32,30 @@ class QuranAPI {
         t.contains('الرحيم');
   }
 
- static List<Ayah> _stripBismillahIfNeeded(int surahNumber, List<Ayah> ayahs) {
-  // Keep Surah 1 as-is (Bismillah is commonly treated as ayah 1 there)
-  // Surah 9 has no Bismillah
-  if (surahNumber == 1 || surahNumber == 9) return ayahs;
-  if (ayahs.isEmpty) return ayahs;
+  static List<Ayah> _stripBismillahIfNeeded(int surahNumber, List<Ayah> ayahs) {
+    // Keep Surah 1 as-is (Bismillah is commonly treated as ayah 1 there)
+    // Surah 9 has no Bismillah
+    if (surahNumber == 1 || surahNumber == 9) return ayahs;
+    if (ayahs.isEmpty) return ayahs;
 
-  // If dataset prepends Bismillah, remove it
-  if (_looksLikeBismillah(ayahs.first.text)) {
-    final trimmed = ayahs.sublist(1);
+    // If dataset prepends Bismillah, remove it
+    if (_looksLikeBismillah(ayahs.first.text)) {
+      final trimmed = ayahs.sublist(1);
 
-    // IMPORTANT: renumber display ayah numbers (keep GLOBAL number for audio)
-    return List<Ayah>.generate(trimmed.length, (i) {
-      final a = trimmed[i];
-      return Ayah(
-        number: a.number, // keep global ayah number for audio
-        text: a.text,
-        numberInSurah: i + 1, // renumber so Alif Lam Meem becomes Ayah 1
-        translation: a.translation,
-      );
-    });
+      // IMPORTANT: renumber display ayah numbers (keep GLOBAL number for audio)
+      return List<Ayah>.generate(trimmed.length, (i) {
+        final a = trimmed[i];
+        return Ayah(
+          number: a.number, // keep global ayah number for audio
+          text: a.text,
+          numberInSurah: i + 1, // renumber so Alif Lam Meem becomes Ayah 1
+          translation: a.translation,
+        );
+      });
+    }
+
+    return ayahs;
   }
-
-  return ayahs;
-}
 
   static Future<List<Surah>> getAllSurahs() async {
     try {
@@ -95,7 +99,9 @@ class QuranAPI {
         final built = <Ayah>[];
         for (int i = 0; i < arabicAyahs.length; i++) {
           final a = arabicAyahs[i] as Map<String, dynamic>;
-          final tr = (i < englishAyahs.length) ? (englishAyahs[i] as Map<String, dynamic>) : null;
+          final tr = (i < englishAyahs.length)
+              ? (englishAyahs[i] as Map<String, dynamic>)
+              : null;
 
           built.add(
             Ayah(
@@ -148,6 +154,47 @@ class QuranAPI {
 
     return null;
   }
+
+  static Future<List<JuzStart>> getAllJuzStarts() async {
+    try {
+      await _loadLocalData();
+      final surahs = (_cachedArabicData?['data']?['surahs'] as List? ?? []);
+      final Map<int, JuzStart> starts = {};
+
+      for (final rawSurah in surahs) {
+        final surah = rawSurah as Map<String, dynamic>;
+        final int surahNumber = (surah['number'] ?? 0) as int;
+        final String englishName = (surah['englishName'] ?? '') as String;
+        final ayahs = (surah['ayahs'] as List? ?? []);
+
+        for (final rawAyah in ayahs) {
+          final ayah = rawAyah as Map<String, dynamic>;
+          final int juz = (ayah['juz'] ?? 0) as int;
+          if (juz <= 0 || starts.containsKey(juz)) continue;
+
+          starts[juz] = JuzStart(
+            juzNumber: juz,
+            surahNumber: surahNumber,
+            surahEnglishName: englishName,
+            ayahNumberInSurah: (ayah['numberInSurah'] ?? 1) as int,
+          );
+        }
+      }
+
+      return List<JuzStart>.generate(30, (i) {
+        final juz = i + 1;
+        return starts[juz] ??
+            JuzStart(
+              juzNumber: juz,
+              surahNumber: 1,
+              surahEnglishName: 'Al-Faatiha',
+              ayahNumberInSurah: 1,
+            );
+      });
+    } catch (_) {
+      return [];
+    }
+  }
 }
 
 // Models
@@ -169,15 +216,30 @@ class Surah {
   });
 
   factory Surah.fromJson(Map<String, dynamic> json) {
+    final ayahs = (json['ayahs'] as List?) ?? const [];
     return Surah(
       number: json['number'] ?? 0,
       name: json['name'] ?? '',
       englishName: json['englishName'] ?? '',
       englishNameTranslation: json['englishNameTranslation'] ?? '',
-      numberOfAyahs: json['numberOfAyahs'] ?? 0,
+      numberOfAyahs: (json['numberOfAyahs'] as int?) ?? ayahs.length,
       revelationType: json['revelationType'] ?? 'Meccan',
     );
   }
+}
+
+class JuzStart {
+  final int juzNumber;
+  final int surahNumber;
+  final String surahEnglishName;
+  final int ayahNumberInSurah;
+
+  JuzStart({
+    required this.juzNumber,
+    required this.surahNumber,
+    required this.surahEnglishName,
+    required this.ayahNumberInSurah,
+  });
 }
 
 class SurahDetail {

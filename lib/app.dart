@@ -35,8 +35,9 @@ class QuranCompanionAppState extends State<QuranCompanionApp> {
 
   void toggleTheme() {
     setState(() {
-      _themeMode =
-          _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+      _themeMode = _themeMode == ThemeMode.dark
+          ? ThemeMode.light
+          : ThemeMode.dark;
       LocalStorage.setDarkMode(_themeMode == ThemeMode.dark);
     });
   }
@@ -75,12 +76,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
@@ -112,9 +110,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             label: 'Bookmarks',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today_outlined),
-            activeIcon: Icon(Icons.calendar_today),
-            label: 'Progress',
+            icon: Icon(Icons.view_list_outlined),
+            activeIcon: Icon(Icons.view_list),
+            label: 'Juz',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings_outlined),

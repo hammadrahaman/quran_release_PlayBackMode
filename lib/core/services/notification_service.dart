@@ -12,8 +12,9 @@ class NotificationService {
   static Future<void> initialize() async {
     tz.initializeTimeZones();
 
-    const androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
 
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
@@ -30,13 +31,18 @@ class NotificationService {
 
     await _notifications
         .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.requestNotificationsPermission();
+
+    await _notifications
+        .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin
+        >()
+        ?.requestPermissions(alert: true, badge: true, sound: true);
   }
+
+  static bool _threeHourlyScheduled = false;
 
   /* -------------------- DAILY MESSAGES -------------------- */
 
@@ -69,7 +75,6 @@ class NotificationService {
     required int hadithHour,
     required int hadithMinute,
   }) async {
-
     // Qur’an Reminder
     await _notifications.zonedSchedule(
       1,
@@ -101,6 +106,57 @@ class NotificationService {
           UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time,
     );
+  }
+
+  /* -------------------- EVERY 3 HOURS -------------------- */
+
+  static Future<void> scheduleEvery3HoursReminder() async {
+    if (_threeHourlyScheduled) return;
+
+    // Clear old schedule to avoid duplicates across app restarts.
+    await _notifications.cancel(3000);
+    for (int i = 0; i < 8; i++) {
+      await _notifications.cancel(3001 + i);
+    }
+
+    final now = tz.TZDateTime.now(tz.local);
+    final first = now.add(const Duration(hours: 3));
+
+    await _notifications.zonedSchedule(
+      3000,
+      'Quran Reminder',
+      _randomMessage(_quranMessages),
+      first,
+      _notificationDetails(
+        channelId: 'quran_3hour_channel',
+        channelName: 'Quran Every 3 Hours',
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+    );
+
+    for (int i = 0; i < 8; i++) {
+      final t = tz.TZDateTime(tz.local, now.year, now.month, now.day, i * 3);
+      final scheduled = t.isBefore(now) ? t.add(const Duration(days: 1)) : t;
+
+      await _notifications.zonedSchedule(
+        3001 + i,
+        'Quran Reminder',
+        _randomMessage(_quranMessages),
+        scheduled,
+        _notificationDetails(
+          channelId: 'quran_3hour_channel',
+          channelName: 'Quran Every 3 Hours',
+        ),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+    }
+
+    _threeHourlyScheduled = true;
   }
 
   /* -------------------- MOTIVATIONAL -------------------- */

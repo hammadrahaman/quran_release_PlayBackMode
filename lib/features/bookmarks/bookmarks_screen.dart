@@ -9,7 +9,8 @@ class BookmarksScreen extends StatefulWidget {
   State<BookmarksScreen> createState() => _BookmarksScreenState();
 }
 
-class _BookmarksScreenState extends State<BookmarksScreen> with AutomaticKeepAliveClientMixin {
+class _BookmarksScreenState extends State<BookmarksScreen>
+    with AutomaticKeepAliveClientMixin {
   List<Map<String, dynamic>> bookmarks = [];
 
   @override
@@ -48,7 +49,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> with AutomaticKeepAli
   @override
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
-    
+
     // Reload bookmarks on every build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final currentBookmarks = LocalStorage.getAllBookmarks();
@@ -56,29 +57,43 @@ class _BookmarksScreenState extends State<BookmarksScreen> with AutomaticKeepAli
         loadBookmarks();
       }
     });
-    
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    const surface = Color(0xFF121417);
+    const card = Color(0xFF1B1E23);
+    const chip = Color(0xFF2A2D33);
+    const textPrimary = Color(0xFFF1F3F6);
+    const textSecondary = Color(0xFFB1B6C2);
 
     return Scaffold(
+      backgroundColor: surface,
       appBar: AppBar(
-        title: const Text('Bookmarks'),
+        title: const Text(
+          'Bookmarks',
+          style: TextStyle(color: textPrimary, fontWeight: FontWeight.w700),
+        ),
         centerTitle: true,
+        elevation: 0,
+        backgroundColor: surface,
+        iconTheme: const IconThemeData(color: textPrimary),
         actions: [
           if (bookmarks.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(right: 16),
               child: Center(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
-                    color: Colors.teal.withOpacity(0.2),
+                    color: chip,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     '${bookmarks.length}',
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Colors.teal,
+                      color: textPrimary,
                     ),
                   ),
                 ),
@@ -105,19 +120,16 @@ class _BookmarksScreenState extends State<BookmarksScreen> with AutomaticKeepAli
                   const SizedBox(height: 16),
                   Text(
                     'No bookmarks yet',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 18,
-                      color: Colors.grey[600],
+                      color: textSecondary,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Bookmark ayahs while reading',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[500],
-                    ),
+                    style: const TextStyle(fontSize: 14, color: textSecondary),
                   ),
                   const SizedBox(height: 24),
                   // Manual refresh button
@@ -143,10 +155,17 @@ class _BookmarksScreenState extends State<BookmarksScreen> with AutomaticKeepAli
                 final surahName = bookmark['surahName'];
                 final note = bookmark['note'] ?? '';
                 final timestamp = DateTime.parse(bookmark['timestamp']);
-                final formattedDate = '${timestamp.day}/${timestamp.month}/${timestamp.year}';
+                final formattedDate =
+                    '${timestamp.day}/${timestamp.month}/${timestamp.year}';
 
                 return Card(
+                  color: card,
+                  elevation: 0,
                   margin: const EdgeInsets.only(bottom: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: const BorderSide(color: Colors.white10),
+                  ),
                   child: InkWell(
                     onTap: () {
                       Navigator.push(
@@ -170,12 +189,12 @@ class _BookmarksScreenState extends State<BookmarksScreen> with AutomaticKeepAli
                             width: 48,
                             height: 48,
                             decoration: BoxDecoration(
-                              color: Colors.teal.withOpacity(0.1),
+                              color: chip,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Icon(
                               Icons.bookmark,
-                              color: Colors.teal,
+                              color: textPrimary,
                               size: 24,
                             ),
                           ),
@@ -191,23 +210,24 @@ class _BookmarksScreenState extends State<BookmarksScreen> with AutomaticKeepAli
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
+                                    color: textPrimary,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   'Surah $surahNumber, Ayah $ayahNumber',
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontSize: 14,
-                                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                    color: textSecondary,
                                   ),
                                 ),
                                 if (note.isNotEmpty) ...[
                                   const SizedBox(height: 4),
                                   Text(
                                     note,
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       fontSize: 13,
-                                      color: isDark ? Colors.grey[500] : Colors.grey[500],
+                                      color: textSecondary,
                                       fontStyle: FontStyle.italic,
                                     ),
                                     maxLines: 1,
@@ -217,9 +237,9 @@ class _BookmarksScreenState extends State<BookmarksScreen> with AutomaticKeepAli
                                 const SizedBox(height: 4),
                                 Text(
                                   formattedDate,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontSize: 12,
-                                    color: Colors.grey[500],
+                                    color: textSecondary,
                                   ),
                                 ),
                               ],
