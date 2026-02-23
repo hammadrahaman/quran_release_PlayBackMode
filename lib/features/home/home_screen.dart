@@ -121,89 +121,86 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Continue Reading (card)
-              if (lastRead['surah'] != 1 || lastRead['ayah'] != 1)
-                Container(
-                  margin: const EdgeInsets.only(bottom: 14),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(18),
-                    gradient: LinearGradient(
-                      colors: isDark
-                          ? const [Color(0xFF0B0F1A), Color(0xFF141B33)]
-                          : const [Color(0xFFFFFFFF), Color(0xFFF3F6FF)],
-                    ),
-                    border: Border.all(
-                      color: isDark ? Colors.white12 : Colors.black12,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: accent.withOpacity(isDark ? 0.22 : 0.14),
-                        blurRadius: 18,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
+              // Continue Reading (always visible)
+              Container(
+                margin: const EdgeInsets.only(bottom: 14),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  gradient: LinearGradient(
+                    colors: isDark
+                        ? const [Color(0xFF0B0F1A), Color(0xFF141B33)]
+                        : const [Color(0xFFFFFFFF), Color(0xFFF3F6FF)],
                   ),
-                  child: InkWell(
-                    onTap: _continueReading,
-                    borderRadius: BorderRadius.circular(18),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 46,
-                            height: 46,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: LinearGradient(
-                                colors: [accent, accent2],
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.play_arrow_rounded,
-                              color: Colors.white,
-                              size: 28,
-                            ),
+                  border: Border.all(
+                    color: isDark ? Colors.white12 : Colors.black12,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: accent.withOpacity(isDark ? 0.22 : 0.14),
+                      blurRadius: 18,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: InkWell(
+                  onTap: _continueReading,
+                  borderRadius: BorderRadius.circular(18),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 46,
+                          height: 46,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(colors: [accent, accent2]),
                           ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Continue reading',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w800,
-                                    color: isDark
-                                        ? Colors.white70
-                                        : Colors.black54,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Surah ${lastRead['surah']}, Ayah ${lastRead['ayah']}',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w900,
-                                    color: isDark
-                                        ? Colors.white
-                                        : Colors.black87,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Icon(
-                            Icons.chevron_right_rounded,
+                          child: const Icon(
+                            Icons.play_arrow_rounded,
+                            color: Colors.white,
                             size: 28,
-                            color: isDark ? Colors.white60 : Colors.black45,
                           ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                lastRead['surah'] == 1 && lastRead['ayah'] == 1
+                                    ? 'Start reading'
+                                    : 'Continue reading',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                  color: isDark
+                                      ? Colors.white70
+                                      : Colors.black54,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Surah ${lastRead['surah']}, Ayah ${lastRead['ayah']}',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w900,
+                                  color: isDark ? Colors.white : Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          size: 28,
+                          color: isDark ? Colors.white60 : Colors.black45,
+                        ),
+                      ],
                     ),
                   ),
                 ),
+              ),
 
               Container(
                 padding: const EdgeInsets.all(10),
@@ -233,8 +230,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       decoration: BoxDecoration(
                         color: isDark
                             ? Colors.black26
-                            : const Color(0xFF0E1E4A),
+                            : Colors.white.withValues(alpha: 0.92),
                         borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: isDark ? Colors.white10 : Colors.black12,
+                        ),
                       ),
                       child: Row(
                         children: [
@@ -520,6 +520,7 @@ class _RangePill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final unselectedText = isDark ? Colors.white70 : const Color(0xFF334155);
 
     return Expanded(
       child: GestureDetector(
@@ -539,9 +540,7 @@ class _RangePill extends StatelessWidget {
               label,
               style: TextStyle(
                 fontWeight: FontWeight.w900,
-                color: selected
-                    ? Colors.white
-                    : (isDark ? Colors.white70 : Colors.white),
+                color: selected ? Colors.white : unselectedText,
               ),
             ),
           ),

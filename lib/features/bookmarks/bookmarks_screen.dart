@@ -58,23 +58,28 @@ class _BookmarksScreenState extends State<BookmarksScreen>
       }
     });
 
-    const surface = Color(0xFF121417);
-    const card = Color(0xFF1B1E23);
-    const chip = Color(0xFF2A2D33);
-    const textPrimary = Color(0xFFF1F3F6);
-    const textSecondary = Color(0xFFB1B6C2);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? const Color(0xFF121417) : const Color(0xFFF2F7F6);
+    final card = isDark ? const Color(0xFF1B1E23) : Colors.white;
+    final chip = isDark ? const Color(0xFF2A2D33) : const Color(0xFFD7ECEC);
+    final textPrimary = isDark
+        ? const Color(0xFFF1F3F6)
+        : const Color(0xFF1F2937);
+    final textSecondary = isDark
+        ? const Color(0xFFB1B6C2)
+        : const Color(0xFF6B7280);
 
     return Scaffold(
       backgroundColor: surface,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Bookmarks',
           style: TextStyle(color: textPrimary, fontWeight: FontWeight.w700),
         ),
         centerTitle: true,
         elevation: 0,
         backgroundColor: surface,
-        iconTheme: const IconThemeData(color: textPrimary),
+        iconTheme: IconThemeData(color: textPrimary),
         actions: [
           if (bookmarks.isNotEmpty)
             Padding(
@@ -91,7 +96,7 @@ class _BookmarksScreenState extends State<BookmarksScreen>
                   ),
                   child: Text(
                     '${bookmarks.length}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: textPrimary,
                     ),
@@ -101,7 +106,7 @@ class _BookmarksScreenState extends State<BookmarksScreen>
             ),
           // Refresh button
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: Icon(Icons.refresh),
             onPressed: loadBookmarks,
             tooltip: 'Refresh bookmarks',
           ),
@@ -120,7 +125,7 @@ class _BookmarksScreenState extends State<BookmarksScreen>
                   const SizedBox(height: 16),
                   Text(
                     'No bookmarks yet',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       color: textSecondary,
                       fontWeight: FontWeight.w500,
@@ -129,14 +134,14 @@ class _BookmarksScreenState extends State<BookmarksScreen>
                   const SizedBox(height: 8),
                   Text(
                     'Bookmark ayahs while reading',
-                    style: const TextStyle(fontSize: 14, color: textSecondary),
+                    style: TextStyle(fontSize: 14, color: textSecondary),
                   ),
                   const SizedBox(height: 24),
                   // Manual refresh button
                   OutlinedButton.icon(
                     onPressed: loadBookmarks,
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Refresh'),
+                    icon: Icon(Icons.refresh),
+                    label: Text('Refresh'),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Colors.teal),
                       foregroundColor: Colors.teal,
@@ -164,7 +169,9 @@ class _BookmarksScreenState extends State<BookmarksScreen>
                   margin: const EdgeInsets.only(bottom: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
-                    side: const BorderSide(color: Colors.white10),
+                    side: BorderSide(
+                      color: isDark ? Colors.white10 : Colors.black12,
+                    ),
                   ),
                   child: InkWell(
                     onTap: () {
@@ -192,7 +199,7 @@ class _BookmarksScreenState extends State<BookmarksScreen>
                               color: chip,
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.bookmark,
                               color: textPrimary,
                               size: 24,
@@ -207,7 +214,7 @@ class _BookmarksScreenState extends State<BookmarksScreen>
                               children: [
                                 Text(
                                   surahName,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
                                     color: textPrimary,
@@ -216,7 +223,7 @@ class _BookmarksScreenState extends State<BookmarksScreen>
                                 const SizedBox(height: 4),
                                 Text(
                                   'Surah $surahNumber, Ayah $ayahNumber',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 14,
                                     color: textSecondary,
                                   ),
@@ -225,7 +232,7 @@ class _BookmarksScreenState extends State<BookmarksScreen>
                                   const SizedBox(height: 4),
                                   Text(
                                     note,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 13,
                                       color: textSecondary,
                                       fontStyle: FontStyle.italic,
@@ -237,7 +244,7 @@ class _BookmarksScreenState extends State<BookmarksScreen>
                                 const SizedBox(height: 4),
                                 Text(
                                   formattedDate,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     color: textSecondary,
                                   ),
@@ -248,27 +255,27 @@ class _BookmarksScreenState extends State<BookmarksScreen>
 
                           // Delete button
                           IconButton(
-                            icon: const Icon(Icons.delete_outline),
+                            icon: Icon(Icons.delete_outline),
                             color: Colors.red,
                             onPressed: () {
                               showDialog(
                                 context: context,
                                 builder: (context) => AlertDialog(
-                                  title: const Text('Remove Bookmark'),
-                                  content: const Text(
+                                  title: Text('Remove Bookmark'),
+                                  content: Text(
                                     'Are you sure you want to remove this bookmark?',
                                   ),
                                   actions: [
                                     TextButton(
                                       onPressed: () => Navigator.pop(context),
-                                      child: const Text('Cancel'),
+                                      child: Text('Cancel'),
                                     ),
                                     TextButton(
                                       onPressed: () {
                                         Navigator.pop(context);
                                         deleteBookmark(surahNumber, ayahNumber);
                                       },
-                                      child: const Text(
+                                      child: Text(
                                         'Remove',
                                         style: TextStyle(color: Colors.red),
                                       ),

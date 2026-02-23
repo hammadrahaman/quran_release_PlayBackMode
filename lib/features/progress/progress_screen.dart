@@ -68,25 +68,30 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const surface = Color(0xFF121417);
-    const card = Color(0xFF1B1E23);
-    const chip = Color(0xFF2A2D33);
-    const textPrimary = Color(0xFFF1F3F6);
-    const textSecondary = Color(0xFFB1B6C2);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? const Color(0xFF121417) : const Color(0xFFF2F7F6);
+    final card = isDark ? const Color(0xFF1B1E23) : Colors.white;
+    final chip = isDark ? const Color(0xFF2A2D33) : const Color(0xFFD7ECEC);
+    final textPrimary = isDark
+        ? const Color(0xFFF1F3F6)
+        : const Color(0xFF1F2937);
+    final textSecondary = isDark
+        ? const Color(0xFFB1B6C2)
+        : const Color(0xFF6B7280);
     return Scaffold(
       backgroundColor: surface,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Juz Reading',
           style: TextStyle(color: textPrimary, fontWeight: FontWeight.w700),
         ),
         centerTitle: true,
         elevation: 0,
         backgroundColor: surface,
-        iconTheme: const IconThemeData(color: textPrimary),
+        iconTheme: IconThemeData(color: textPrimary),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: Icon(Icons.refresh),
             onPressed: _loadJuz,
             tooltip: 'Refresh',
           ),
@@ -108,26 +113,30 @@ class _ProgressScreenState extends State<ProgressScreen> {
             ),
             child: TextField(
               controller: _searchController,
-              style: const TextStyle(color: textPrimary),
+              style: TextStyle(color: textPrimary),
               decoration: InputDecoration(
                 hintText: 'Search Juz by number or Surah...',
-                prefixIcon: const Icon(Icons.search, color: Colors.teal),
+                prefixIcon: Icon(Icons.search, color: Colors.teal),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear, color: textSecondary),
+                        icon: Icon(Icons.clear, color: textSecondary),
                         onPressed: _clearSearch,
                       )
                     : null,
                 filled: true,
-                fillColor: const Color(0xFF1E2228),
-                hintStyle: const TextStyle(color: textSecondary),
+                fillColor: isDark ? const Color(0xFF1E2228) : Colors.white,
+                hintStyle: TextStyle(color: textSecondary),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: Colors.white10),
+                  borderSide: BorderSide(
+                    color: isDark ? Colors.white10 : Colors.black12,
+                  ),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: Colors.white10),
+                  borderSide: BorderSide(
+                    color: isDark ? Colors.white10 : Colors.black12,
+                  ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -160,8 +169,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
                           const SizedBox(height: 12),
                           ElevatedButton.icon(
                             onPressed: _loadJuz,
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('Retry'),
+                            icon: Icon(Icons.refresh),
+                            label: Text('Retry'),
                           ),
                         ],
                       ),
@@ -178,7 +187,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
                         margin: const EdgeInsets.only(bottom: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
-                          side: const BorderSide(color: Colors.white10),
+                          side: BorderSide(
+                            color: isDark ? Colors.white10 : Colors.black12,
+                          ),
                         ),
                         child: ListTile(
                           contentPadding: const EdgeInsets.symmetric(
@@ -195,7 +206,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                             child: Center(
                               child: Text(
                                 '${juz.juzNumber}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: textPrimary,
                                 ),
@@ -204,7 +215,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                           ),
                           title: Text(
                             'Juz ${juz.juzNumber}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 18,
                               color: textPrimary,
@@ -214,7 +225,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                             padding: const EdgeInsets.only(top: 4),
                             child: Text(
                               'Starts at ${juz.surahEnglishName} (${juz.surahNumber}:${juz.ayahNumberInSurah})',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: textSecondary,
                                 fontSize: 13,
                               ),
@@ -222,7 +233,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                           ),
                           trailing: Icon(
                             Icons.chevron_right_rounded,
-                            color: Colors.white38,
+                            color: isDark ? Colors.white38 : Colors.black45,
                           ),
                           onTap: () {
                             Navigator.push(

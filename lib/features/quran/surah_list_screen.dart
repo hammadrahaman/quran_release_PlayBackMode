@@ -117,11 +117,11 @@ class _SurahListScreenState extends State<SurahListScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
+                  child: Text('Cancel'),
                 ),
                 TextButton(
                   onPressed: () => Navigator.pop(context, 1),
-                  child: const Text('Ayah 1'),
+                  child: Text('Ayah 1'),
                 ),
                 ElevatedButton(
                   onPressed: () {
@@ -134,7 +134,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
                     }
                     Navigator.pop(context, value);
                   },
-                  child: const Text('Start'),
+                  child: Text('Start'),
                 ),
               ],
             );
@@ -146,26 +146,31 @@ class _SurahListScreenState extends State<SurahListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const surface = Color(0xFF121417);
-    const card = Color(0xFF1B1E23);
-    const chip = Color(0xFF2A2D33);
-    const textPrimary = Color(0xFFF1F3F6);
-    const textSecondary = Color(0xFFB1B6C2);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? const Color(0xFF121417) : const Color(0xFFF2F7F6);
+    final card = isDark ? const Color(0xFF1B1E23) : Colors.white;
+    final chip = isDark ? const Color(0xFF2A2D33) : const Color(0xFFD7ECEC);
+    final textPrimary = isDark
+        ? const Color(0xFFF1F3F6)
+        : const Color(0xFF1F2937);
+    final textSecondary = isDark
+        ? const Color(0xFFB1B6C2)
+        : const Color(0xFF6B7280);
 
     return Scaffold(
       backgroundColor: surface,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Quran Reading',
           style: TextStyle(color: textPrimary, fontWeight: FontWeight.w700),
         ),
         centerTitle: true,
         elevation: 0,
         backgroundColor: surface,
-        iconTheme: const IconThemeData(color: textPrimary),
+        iconTheme: IconThemeData(color: textPrimary),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: Icon(Icons.refresh),
             onPressed: loadSurahs,
             tooltip: 'Refresh',
           ),
@@ -187,26 +192,30 @@ class _SurahListScreenState extends State<SurahListScreen> {
             ),
             child: TextField(
               controller: _searchController,
-              style: const TextStyle(color: textPrimary),
+              style: TextStyle(color: textPrimary),
               decoration: InputDecoration(
                 hintText: 'Search Surah by name or number...',
-                prefixIcon: const Icon(Icons.search, color: Colors.teal),
+                prefixIcon: Icon(Icons.search, color: Colors.teal),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear, color: textSecondary),
+                        icon: Icon(Icons.clear, color: textSecondary),
                         onPressed: _clearSearch,
                       )
                     : null,
                 filled: true,
-                fillColor: const Color(0xFF1E2228),
-                hintStyle: const TextStyle(color: textSecondary),
+                fillColor: isDark ? const Color(0xFF1E2228) : Colors.white,
+                hintStyle: TextStyle(color: textSecondary),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: Colors.white10),
+                  borderSide: BorderSide(
+                    color: isDark ? Colors.white10 : Colors.black12,
+                  ),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: Colors.white10),
+                  borderSide: BorderSide(
+                    color: isDark ? Colors.white10 : Colors.black12,
+                  ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -226,7 +235,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   'Found ${filteredSurahs.length} Surah(s)',
-                  style: const TextStyle(color: textSecondary, fontSize: 13),
+                  style: TextStyle(color: textSecondary, fontSize: 13),
                 ),
               ),
             ),
@@ -250,8 +259,8 @@ class _SurahListScreenState extends State<SurahListScreen> {
                           const SizedBox(height: 24),
                           ElevatedButton.icon(
                             onPressed: loadSurahs,
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('Retry'),
+                            icon: Icon(Icons.refresh),
+                            label: Text('Retry'),
                           ),
                         ],
                       ),
@@ -270,18 +279,12 @@ class _SurahListScreenState extends State<SurahListScreen> {
                         const SizedBox(height: 16),
                         Text(
                           'No results found',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: textSecondary,
-                          ),
+                          style: TextStyle(fontSize: 16, color: textSecondary),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Try a different search term',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: textSecondary,
-                          ),
+                          style: TextStyle(fontSize: 14, color: textSecondary),
                         ),
                       ],
                     ),
@@ -297,7 +300,9 @@ class _SurahListScreenState extends State<SurahListScreen> {
                         margin: const EdgeInsets.only(bottom: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
-                          side: const BorderSide(color: Colors.white10),
+                          side: BorderSide(
+                            color: isDark ? Colors.white10 : Colors.black12,
+                          ),
                         ),
                         child: ListTile(
                           contentPadding: const EdgeInsets.symmetric(
@@ -314,7 +319,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
                             child: Center(
                               child: Text(
                                 '${surah.number}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: textPrimary,
                                 ),
@@ -326,7 +331,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
                               Expanded(
                                 child: Text(
                                   surah.englishName,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.w700,
                                     fontSize: 18,
                                     color: textPrimary,
@@ -336,7 +341,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
                               const SizedBox(width: 10),
                               Text(
                                 surah.name,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.w600,
                                   color: textPrimary,
@@ -348,7 +353,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
                             padding: const EdgeInsets.only(top: 4),
                             child: Text(
                               '${surah.englishNameTranslation} • ${surah.numberOfAyahs} Ayahs',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: textSecondary,
                                 fontSize: 13,
                               ),
@@ -356,7 +361,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
                           ),
                           trailing: Icon(
                             Icons.chevron_right_rounded,
-                            color: Colors.white38,
+                            color: isDark ? Colors.white38 : Colors.black45,
                           ),
                           onTap: () {
                             _showAyahStartDialog(surah).then((ayah) {
