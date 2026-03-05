@@ -42,7 +42,7 @@ class NotificationService {
         ?.requestPermissions(alert: true, badge: true, sound: true);
   }
 
-  static bool _threeHourlyScheduled = false;
+  static bool _periodicReminderScheduled = false;
 
   /* -------------------- DAILY MESSAGES -------------------- */
 
@@ -108,46 +108,40 @@ class NotificationService {
     );
   }
 
-  /* -------------------- EVERY 3 HOURS -------------------- */
+  /* -------------------- MOTIVATIONAL REMINDER EVERY 4–5 HOURS -------------------- */
 
   static Future<void> scheduleEvery3HoursReminder() async {
-    if (_threeHourlyScheduled) return;
+    if (_periodicReminderScheduled) return;
 
     // Clear old schedule to avoid duplicates across app restarts.
     await _notifications.cancel(3000);
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < 10; i++) {
       await _notifications.cancel(3001 + i);
     }
 
     final now = tz.TZDateTime.now(tz.local);
-    final first = now.add(const Duration(hours: 3));
+    // Schedule at 0:00, 4:00, 8:00, 12:00, 16:00, 20:00 (every 4 hours) – 6 reminders per day
+    const reminderHours = [0, 4, 8, 12, 16, 20];
 
-    await _notifications.zonedSchedule(
-      3000,
-      'Quran Reminder',
-      _randomMessage(_quranMessages),
-      first,
-      _notificationDetails(
-        channelId: 'quran_3hour_channel',
-        channelName: 'Quran Every 3 Hours',
-      ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-    );
-
-    for (int i = 0; i < 8; i++) {
-      final t = tz.TZDateTime(tz.local, now.year, now.month, now.day, i * 3);
+    for (int i = 0; i < reminderHours.length; i++) {
+      final t = tz.TZDateTime(
+        tz.local,
+        now.year,
+        now.month,
+        now.day,
+        reminderHours[i],
+        0,
+      );
       final scheduled = t.isBefore(now) ? t.add(const Duration(days: 1)) : t;
 
       await _notifications.zonedSchedule(
         3001 + i,
-        'Quran Reminder',
+        'Time to read 📖',
         _randomMessage(_quranMessages),
         scheduled,
         _notificationDetails(
           channelId: 'quran_3hour_channel',
-          channelName: 'Quran Every 3 Hours',
+          channelName: 'Quran Reminder (every 4–5 hours)',
         ),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
@@ -156,7 +150,7 @@ class NotificationService {
       );
     }
 
-    _threeHourlyScheduled = true;
+    _periodicReminderScheduled = true;
   }
 
   /* -------------------- MOTIVATIONAL -------------------- */

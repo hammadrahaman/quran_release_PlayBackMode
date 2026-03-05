@@ -22,24 +22,10 @@ class AyahTextWidget extends StatelessWidget {
     this.bismillahText,
   });
 
-  String _convertToArabicNumber(int number) {
-    const english = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-    const arabic = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
-
-    String result = number.toString();
-    for (int i = 0; i < english.length; i++) {
-      result = result.replaceAll(english[i], arabic[i]);
-    }
-    return result;
-  }
-
   @override
   Widget build(BuildContext context) {
     final arabicColor =
         isDark ? const Color(0xFFF6EDE5) : const Color(0xFF2B1B12);
-
-    final markerColor =
-        isDark ? const Color(0xFFBFAE9F) : const Color(0xFF6B4F3F);
 
     final textWidget = RichText(
       textAlign: TextAlign.center,
@@ -68,15 +54,6 @@ class AyahTextWidget extends StatelessWidget {
               letterSpacing: 0.0,
               wordSpacing: 3.0,
               color: arabicColor,
-            ),
-          ),
-          TextSpan(
-            text: ' ﴿${_convertToArabicNumber(ayahNumber)}﴾',
-            style: TextStyle(
-              fontFamily: 'IndoPak',
-              fontSize: (fontSize + 8) * 0.62,
-              height: 2.4,
-              color: markerColor,
             ),
           ),
         ],

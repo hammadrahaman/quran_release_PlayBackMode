@@ -1,7 +1,50 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/services/quran_api.dart';
 import '../quran/ayah_screen.dart';
+
+/// Traditional names and end references for each Juz (from 1 to 30).
+/// Start references come from [JuzStart]; end references are fixed.
+class _JuzInfo {
+  final String name;
+  final int endSurah;
+  final int endAyah;
+  const _JuzInfo(this.name, this.endSurah, this.endAyah);
+}
+
+const List<_JuzInfo> _juzNamesAndEnd = [
+  _JuzInfo('Alif Lam Meem', 2, 141),
+  _JuzInfo('Sayaqool', 2, 252),
+  _JuzInfo('Tilka Ar-Rusul', 3, 92),
+  _JuzInfo('Lan Tana Loo', 4, 23),
+  _JuzInfo('Wal-Muhsanat', 4, 147),
+  _JuzInfo('La Yuhibbullah', 5, 81),
+  _JuzInfo('Wa Iza Sami\'u', 6, 110),
+  _JuzInfo('Wa Lau Annana', 7, 87),
+  _JuzInfo('Qalal Malao', 8, 40),
+  _JuzInfo('Wa A\'lamu', 9, 92),
+  _JuzInfo('Ya\'taziroon', 11, 5),
+  _JuzInfo('Wa Mamin Da\'abba', 12, 52),
+  _JuzInfo('Wa Ma Ubarri\'u', 14, 52),
+  _JuzInfo('Rubama', 16, 128),
+  _JuzInfo('Subhanallazi', 18, 74),
+  _JuzInfo('Qal Alam', 20, 135),
+  _JuzInfo('Iqtaraba', 22, 78),
+  _JuzInfo('Qad Aflaha', 25, 20),
+  _JuzInfo('Wa Qalallazina', 27, 55),
+  _JuzInfo('Aman Khalaq', 29, 45),
+  _JuzInfo('Utlu Ma Oohiya', 33, 30),
+  _JuzInfo('Wa Man Yaqnut', 36, 27),
+  _JuzInfo('Wa Mali', 39, 31),
+  _JuzInfo('Faman Azlam', 41, 46),
+  _JuzInfo('Elahe Yuraddu', 45, 37),
+  _JuzInfo('Ha\'a Meem', 51, 30),
+  _JuzInfo('Qala Fama Khatbukum', 57, 29),
+  _JuzInfo('Qad Sami Allah', 66, 12),
+  _JuzInfo('Tabarakallazi', 77, 50),
+  _JuzInfo('Amma Yatasa\'aloon', 114, 6),
+];
 
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
@@ -54,9 +97,13 @@ class _ProgressScreenState extends State<ProgressScreen> {
         _filtered = _juzStarts;
       } else {
         _filtered = _juzStarts.where((j) {
+          final name = (j.juzNumber <= _juzNamesAndEnd.length)
+              ? _juzNamesAndEnd[j.juzNumber - 1].name.toLowerCase()
+              : '';
           return j.juzNumber.toString().contains(q) ||
               j.surahEnglishName.toLowerCase().contains(q) ||
-              j.surahNumber.toString().contains(q);
+              j.surahNumber.toString().contains(q) ||
+              name.contains(q);
         }).toList();
       }
     });
@@ -64,6 +111,81 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
   void _clearSearch() {
     _searchController.clear();
+  }
+
+  Future<int?> _showAyahStartDialog(BuildContext context, JuzStart juz) async {
+    final detail = await QuranAPI.getSurahWithTranslation(juz.surahNumber);
+    if (detail == null || !context.mounted) return null;
+    final maxAyah = detail.numberOfAyahs > 0 ? detail.numberOfAyahs : 1;
+    final initialAyah = juz.ayahNumberInSurah.clamp(1, maxAyah);
+    final controller = TextEditingController(text: '$initialAyah');
+    String? error;
+
+    final juzIndex = juz.juzNumber - 1;
+    final juzName = juzIndex >= 0 && juzIndex < _juzNamesAndEnd.length
+        ? _juzNamesAndEnd[juzIndex].name
+        : null;
+
+    return showDialog<int>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setStateDialog) {
+            return AlertDialog(
+              title: Text(
+                juzName != null
+                    ? 'Start Juz ${juz.juzNumber} ($juzName)'
+                    : 'Start ${juz.surahEnglishName}',
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${juz.surahEnglishName} · Choose ayah (1 - $maxAyah)',
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    autofocus: true,
+                    controller: controller,
+                    keyboardType: TextInputType.number,
+                    textInputAction: TextInputAction.done,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: InputDecoration(
+                      hintText: 'Ayah number',
+                      errorText: error,
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, 1),
+                  child: Text('Ayah 1'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final value = int.tryParse(controller.text.trim());
+                    if (value == null || value < 1 || value > maxAyah) {
+                      setStateDialog(() {
+                        error = 'Enter a number between 1 and $maxAyah';
+                      });
+                      return;
+                    }
+                    Navigator.pop(ctx, value);
+                  },
+                  child: Text('Start'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -181,6 +303,15 @@ class _ProgressScreenState extends State<ProgressScreen> {
                     itemCount: _filtered.length,
                     itemBuilder: (context, index) {
                       final juz = _filtered[index];
+                      final info = juz.juzNumber <= _juzNamesAndEnd.length
+                          ? _juzNamesAndEnd[juz.juzNumber - 1]
+                          : null;
+                      final rangeStr = info != null
+                          ? '${juz.surahNumber}:${juz.ayahNumberInSurah} – ${info.endSurah}:${info.endAyah}'
+                          : 'Starts at ${juz.surahEnglishName} (${juz.surahNumber}:${juz.ayahNumberInSurah})';
+                      final subtitleStr = info != null
+                          ? '${info.name} · $rangeStr'
+                          : 'Starts at ${juz.surahEnglishName} (${juz.surahNumber}:${juz.ayahNumberInSurah})';
                       return Card(
                         color: card,
                         elevation: 0,
@@ -224,7 +355,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                           subtitle: Padding(
                             padding: const EdgeInsets.only(top: 4),
                             child: Text(
-                              'Starts at ${juz.surahEnglishName} (${juz.surahNumber}:${juz.ayahNumberInSurah})',
+                              subtitleStr,
                               style: TextStyle(
                                 color: textSecondary,
                                 fontSize: 13,
@@ -236,16 +367,19 @@ class _ProgressScreenState extends State<ProgressScreen> {
                             color: isDark ? Colors.white38 : Colors.black45,
                           ),
                           onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => AyahScreen(
-                                  surahNumber: juz.surahNumber,
-                                  surahName: juz.surahEnglishName,
-                                  initialAyahIndex: juz.ayahNumberInSurah - 1,
+                            _showAyahStartDialog(context, juz).then((ayah) {
+                              if (ayah == null || !context.mounted) return;
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => AyahScreen(
+                                    surahNumber: juz.surahNumber,
+                                    surahName: juz.surahEnglishName,
+                                    initialAyahIndex: ayah - 1,
+                                  ),
                                 ),
-                              ),
-                            );
+                              );
+                            });
                           },
                         ),
                       );
