@@ -13,6 +13,59 @@ class _JuzInfo {
   const _JuzInfo(this.name, this.endSurah, this.endAyah);
 }
 
+/// Result from the Juz start dialog: which (surah, ayah) to open.
+class _JuzDialogResult {
+  final int surahNumber;
+  final int ayahInSurah;
+  final String surahName;
+  _JuzDialogResult(this.surahNumber, this.ayahInSurah, this.surahName);
+}
+
+/// One segment of a Juz: a surah and the ayah range within it for this Juz.
+class _JuzSegment {
+  final int surahNumber;
+  final String surahName;
+  final int startAyah;
+  final int endAyah;
+  _JuzSegment(this.surahNumber, this.surahName, this.startAyah, this.endAyah);
+}
+
+/// Number of ayahs per surah (1–114). Matches app data.
+const List<int> _surahAyahCounts = [
+  7, 286, 200, 176, 120, 165, 206, 75, 129, 109, 123, 111, 43, 52, 99, 128,
+  111, 110, 98, 135, 112, 78, 118, 64, 77, 227, 93, 88, 69, 60, 34, 30, 73, 54,
+  45, 83, 182, 88, 75, 85, 54, 53, 89, 59, 37, 35, 38, 29, 18, 45, 60, 49, 62,
+  55, 78, 96, 29, 22, 24, 13, 14, 11, 11, 18, 12, 12, 30, 52, 52, 44, 28, 28,
+  20, 56, 40, 31, 50, 40, 46, 42, 29, 19, 36, 25, 22, 17, 19, 26, 30, 20, 15,
+  21, 11, 8, 8, 19, 5, 8, 8, 11, 11, 8, 3, 9, 5, 4, 7, 3, 6, 3, 5, 4, 5, 6,
+];
+
+/// English names for surahs 1–114. Matches app data.
+const List<String> _surahEnglishNames = [
+  'Al-Faatiha', 'Al-Baqara', 'Aal-i-Imraan', 'An-Nisaa', 'Al-Maaida',
+  'Al-An\'aam', 'Al-A\'raaf', 'Al-Anfaal', 'At-Tawba', 'Yunus', 'Hud',
+  'Yusuf', 'Ar-Ra\'d', 'Ibrahim', 'Al-Hijr', 'An-Nahl', 'Al-Israa',
+  'Al-Kahf', 'Maryam', 'Taa-Haa', 'Al-Anbiyaa', 'Al-Hajj', 'Al-Muminoon',
+  'An-Noor', 'Al-Furqaan', 'Ash-Shu\'araa', 'An-Naml', 'Al-Qasas',
+  'Al-Ankaboot', 'Ar-Room', 'Luqman', 'As-Sajda', 'Al-Ahzaab', 'Saba',
+  'Faatir', 'Yaseen', 'As-Saaffaat', 'Saad', 'Az-Zumar', 'Ghafir',
+  'Fussilat', 'Ash-Shura', 'Az-Zukhruf', 'Ad-Dukhaan', 'Al-Jaathiya',
+  'Al-Ahqaf', 'Muhammad', 'Al-Fath', 'Al-Hujuraat', 'Qaaf',
+  'Adh-Dhaariyat', 'At-Tur', 'An-Najm', 'Al-Qamar', 'Ar-Rahmaan',
+  'Al-Waaqia', 'Al-Hadid', 'Al-Mujaadila', 'Al-Hashr', 'Al-Mumtahana',
+  'As-Saff', 'Al-Jumu\'a', 'Al-Munaafiqoon', 'At-Taghaabun', 'At-Talaaq',
+  'At-Tahrim', 'Al-Mulk', 'Al-Qalam', 'Al-Haaqqa', 'Al-Ma\'aarij',
+  'Nooh', 'Al-Jinn', 'Al-Muzzammil', 'Al-Muddaththir', 'Al-Qiyaama',
+  'Al-Insaan', 'Al-Mursalaat', 'An-Naba', 'An-Naazi\'aat', 'Abasa',
+  'At-Takwir', 'Al-Infitaar', 'Al-Mutaffifin', 'Al-Inshiqaaq', 'Al-Burooj',
+  'At-Taariq', 'Al-A\'laa', 'Al-Ghaashiya', 'Al-Fajr', 'Al-Balad',
+  'Ash-Shams', 'Al-Lail', 'Ad-Dhuhaa', 'Ash-Sharh', 'At-Tin', 'Al-Alaq',
+  'Al-Qadr', 'Al-Bayyina', 'Az-Zalzala', 'Al-Aadiyaat', 'Al-Qaari\'a',
+  'At-Takaathur', 'Al-Asr', 'Al-Humaza', 'Al-Fil', 'Quraish', 'Al-Maa\'un',
+  'Al-Kawthar', 'Al-Kaafiroon', 'An-Nasr', 'Al-Masad', 'Al-Ikhlaas',
+  'Al-Falaq', 'An-Naas',
+];
+
 const List<_JuzInfo> _juzNamesAndEnd = [
   _JuzInfo('Alif Lam Meem', 2, 141),
   _JuzInfo('Sayaqool', 2, 252),
@@ -33,7 +86,7 @@ const List<_JuzInfo> _juzNamesAndEnd = [
   _JuzInfo('Iqtaraba', 22, 78),
   _JuzInfo('Qad Aflaha', 25, 20),
   _JuzInfo('Wa Qalallazina', 27, 55),
-  _JuzInfo('Aman Khalaq', 29, 45),
+  _JuzInfo('Aman Khalaq', 29, 44),
   _JuzInfo('Utlu Ma Oohiya', 33, 30),
   _JuzInfo('Wa Man Yaqnut', 36, 27),
   _JuzInfo('Wa Mali', 39, 31),
@@ -80,11 +133,48 @@ class _ProgressScreenState extends State<ProgressScreen> {
     });
 
     final data = await QuranAPI.getAllJuzStarts();
+    // Override Juz starts that differ from source data (corrected boundaries)
+    final corrected = data.map<JuzStart>((j) {
+      if (j.juzNumber == 11) {
+        return JuzStart(
+          juzNumber: 11,
+          surahNumber: 9,
+          surahEnglishName: 'At-Tawba',
+          ayahNumberInSurah: 94,
+        );
+      }
+      if (j.juzNumber == 14) {
+        return JuzStart(
+          juzNumber: 14,
+          surahNumber: 15,
+          surahEnglishName: 'Al-Hijr',
+          ayahNumberInSurah: 2,
+        );
+      }
+      if (j.juzNumber == 20) {
+        return JuzStart(
+          juzNumber: 20,
+          surahNumber: 27,
+          surahEnglishName: 'An-Naml',
+          ayahNumberInSurah: 60,
+        );
+      }
+      if (j.juzNumber == 21) {
+        return JuzStart(
+          juzNumber: 21,
+          surahNumber: 29,
+          surahEnglishName: 'Al-Ankaboot',
+          ayahNumberInSurah: 45,
+        );
+      }
+      return j;
+    }).toList();
+
     setState(() {
-      _juzStarts = data;
-      _filtered = data;
+      _juzStarts = corrected;
+      _filtered = corrected;
       _isLoading = false;
-      if (data.isEmpty) {
+      if (corrected.isEmpty) {
         _error = 'Failed to load Juz list.';
       }
     });
@@ -113,50 +203,131 @@ class _ProgressScreenState extends State<ProgressScreen> {
     _searchController.clear();
   }
 
-  Future<int?> _showAyahStartDialog(BuildContext context, JuzStart juz) async {
-    final detail = await QuranAPI.getSurahWithTranslation(juz.surahNumber);
-    if (detail == null || !context.mounted) return null;
-    final maxAyah = detail.numberOfAyahs > 0 ? detail.numberOfAyahs : 1;
-    final initialAyah = juz.ayahNumberInSurah.clamp(1, maxAyah);
-    final controller = TextEditingController(text: '$initialAyah');
-    String? error;
+  /// Builds the list of (surah, ayah range) segments for this Juz.
+  List<_JuzSegment> _buildJuzSegments(JuzStart juz) {
+    final juzIndex = juz.juzNumber - 1;
+    if (juzIndex < 0 || juzIndex >= _juzNamesAndEnd.length) return [];
+    final info = _juzNamesAndEnd[juzIndex];
+    final segments = <_JuzSegment>[];
+    int s = juz.surahNumber;
+    int a = juz.ayahNumberInSurah;
+    final endS = info.endSurah;
+    final endA = info.endAyah;
+    if (s < 1 || s > 114) return [];
+    while (true) {
+      final len = (s <= _surahAyahCounts.length)
+          ? _surahAyahCounts[s - 1]
+          : 0;
+      if (len <= 0) break;
+      final endInSurah = (s == endS) ? endA : len;
+      final name = (s <= _surahEnglishNames.length)
+          ? _surahEnglishNames[s - 1]
+          : 'Surah $s';
+      segments.add(_JuzSegment(s, name, a, endInSurah));
+      if (s == endS) break;
+      s++;
+      a = 1;
+      if (s > 114) break;
+    }
+    return segments;
+  }
+
+  Future<_JuzDialogResult?> _showAyahStartDialog(
+      BuildContext context, JuzStart juz) async {
+    final segments = _buildJuzSegments(juz);
+    if (segments.isEmpty || !context.mounted) return null;
 
     final juzIndex = juz.juzNumber - 1;
     final juzName = juzIndex >= 0 && juzIndex < _juzNamesAndEnd.length
         ? _juzNamesAndEnd[juzIndex].name
         : null;
 
-    return showDialog<int>(
+    final selectedIndexNotifier = ValueNotifier<int>(0);
+    final controller = TextEditingController(
+      text: '${segments[0].startAyah}',
+    );
+    String? error;
+
+    return showDialog<_JuzDialogResult>(
       context: context,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (ctx, setStateDialog) {
+            final selectedSegmentIndex = selectedIndexNotifier.value;
+            final seg = segments[selectedSegmentIndex];
+            final minA = seg.startAyah;
+            final maxA = seg.endAyah;
+
             return AlertDialog(
               title: Text(
                 juzName != null
                     ? 'Start Juz ${juz.juzNumber} ($juzName)'
                     : 'Start ${juz.surahEnglishName}',
               ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${juz.surahEnglishName} · Choose ayah (1 - $maxAyah)',
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    autofocus: true,
-                    controller: controller,
-                    keyboardType: TextInputType.number,
-                    textInputAction: TextInputAction.done,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: InputDecoration(
-                      hintText: 'Ayah number',
-                      errorText: error,
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (segments.length > 1) ...[
+                      Text(
+                        'Surah in this Juz',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Theme.of(ctx).hintColor,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      DropdownButtonFormField<int>(
+                        value: selectedSegmentIndex,
+                        decoration: const InputDecoration(
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                        ),
+                        items: List.generate(segments.length, (i) {
+                          final s = segments[i];
+                          return DropdownMenuItem<int>(
+                            value: i,
+                            child: Text(
+                              '${s.surahName} (${s.startAyah}–${s.endAyah})',
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          );
+                        }),
+                        onChanged: (v) {
+                          if (v != null) {
+                            selectedIndexNotifier.value = v;
+                            controller.text =
+                                '${segments[v].startAyah}';
+                            setStateDialog(() => error = null);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    Text(
+                      '${seg.surahName} · Choose ayah ($minA – $maxA)',
+                      style: const TextStyle(fontSize: 14),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 10),
+                    TextField(
+                      autofocus: segments.length <= 1,
+                      controller: controller,
+                      keyboardType: TextInputType.number,
+                      textInputAction: TextInputAction.done,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
+                      decoration: InputDecoration(
+                        hintText: 'Ayah number',
+                        errorText: error,
+                      ),
+                      onChanged: (_) => setStateDialog(() => error = null),
+                    ),
+                  ],
+                ),
               ),
               actions: [
                 TextButton(
@@ -164,19 +335,35 @@ class _ProgressScreenState extends State<ProgressScreen> {
                   child: Text('Cancel'),
                 ),
                 TextButton(
-                  onPressed: () => Navigator.pop(ctx, 1),
-                  child: Text('Ayah 1'),
+                  onPressed: () {
+                    Navigator.pop(
+                      ctx,
+                      _JuzDialogResult(
+                        seg.surahNumber,
+                        seg.startAyah,
+                        seg.surahName,
+                      ),
+                    );
+                  },
+                  child: Text('Ayah ${seg.startAyah}'),
                 ),
                 ElevatedButton(
                   onPressed: () {
                     final value = int.tryParse(controller.text.trim());
-                    if (value == null || value < 1 || value > maxAyah) {
+                    if (value == null || value < minA || value > maxA) {
                       setStateDialog(() {
-                        error = 'Enter a number between 1 and $maxAyah';
+                        error = 'Enter a number between $minA and $maxA';
                       });
                       return;
                     }
-                    Navigator.pop(ctx, value);
+                    Navigator.pop(
+                      ctx,
+                      _JuzDialogResult(
+                        seg.surahNumber,
+                        value,
+                        seg.surahName,
+                      ),
+                    );
                   },
                   child: Text('Start'),
                 ),
@@ -367,15 +554,15 @@ class _ProgressScreenState extends State<ProgressScreen> {
                             color: isDark ? Colors.white38 : Colors.black45,
                           ),
                           onTap: () {
-                            _showAyahStartDialog(context, juz).then((ayah) {
-                              if (ayah == null || !context.mounted) return;
+                            _showAyahStartDialog(context, juz).then((result) {
+                              if (result == null || !context.mounted) return;
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => AyahScreen(
-                                    surahNumber: juz.surahNumber,
-                                    surahName: juz.surahEnglishName,
-                                    initialAyahIndex: ayah - 1,
+                                    surahNumber: result.surahNumber,
+                                    surahName: result.surahName,
+                                    initialAyahIndex: result.ayahInSurah - 1,
                                   ),
                                 ),
                               );
