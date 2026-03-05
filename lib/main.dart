@@ -11,8 +11,12 @@ void main() async {
   await Hive.openBox('progress');
   await Hive.openBox('bookmarks');
 
-  await NotificationService.initialize();
-  await NotificationService.scheduleEvery3HoursReminder();
-
+  try {
+    await NotificationService.initialize();
+    await NotificationService.scheduleEvery3HoursReminder();
+    } catch (e) {
+    // Optional: log the error if needed
+    // print('Notification initialization failed: $e');
+    }
   runApp(const QuranCompanionApp());
 }

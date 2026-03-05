@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:flutter/services.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notifications =
@@ -112,7 +113,7 @@ class NotificationService {
 
   static Future<void> scheduleEvery3HoursReminder() async {
     if (_periodicReminderScheduled) return;
-
+  try {
     // Clear old schedule to avoid duplicates across app restarts.
     await _notifications.cancel(3000);
     for (int i = 0; i < 10; i++) {
@@ -151,6 +152,9 @@ class NotificationService {
     }
 
     _periodicReminderScheduled = true;
+          } catch (e) {
+          print('Error scheduling periodic reminder: $e');
+        }
   }
 
   /* -------------------- MOTIVATIONAL -------------------- */
