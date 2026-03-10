@@ -30,6 +30,17 @@ class _JuzSegment {
   _JuzSegment(this.surahNumber, this.surahName, this.startAyah, this.endAyah);
 }
 
+/// Indo-Pak start (surah, ayah) for each Juz (1–30). Used for display and segment ranges.
+const List<({int surah, int ayah})> _indoPakJuzStarts = [
+  (surah: 1, ayah: 1), (surah: 2, ayah: 142), (surah: 2, ayah: 253), (surah: 3, ayah: 92), (surah: 4, ayah: 24),
+  (surah: 4, ayah: 148), (surah: 5, ayah: 83), (surah: 6, ayah: 111), (surah: 7, ayah: 88), (surah: 8, ayah: 41),
+  (surah: 9, ayah: 94), (surah: 11, ayah: 6), (surah: 12, ayah: 53), (surah: 15, ayah: 2),
+  (surah: 17, ayah: 1), (surah: 18, ayah: 75), (surah: 21, ayah: 1), (surah: 23, ayah: 1), (surah: 25, ayah: 21),
+  (surah: 27, ayah: 60), (surah: 29, ayah: 45), (surah: 33, ayah: 31), (surah: 36, ayah: 22), (surah: 39, ayah: 32),
+  (surah: 41, ayah: 47), (surah: 46, ayah: 1), (surah: 51, ayah: 31), (surah: 58, ayah: 1), (surah: 67, ayah: 1),
+  (surah: 78, ayah: 1),
+];
+
 /// Number of ayahs per surah (1–114). Matches app data.
 const List<int> _surahAyahCounts = [
   7, 286, 200, 176, 120, 165, 206, 75, 129, 109, 123, 111, 43, 52, 99, 128,
@@ -69,26 +80,26 @@ const List<String> _surahEnglishNames = [
 const List<_JuzInfo> _juzNamesAndEnd = [
   _JuzInfo('Alif Lam Meem', 2, 141),
   _JuzInfo('Sayaqool', 2, 252),
-  _JuzInfo('Tilka Ar-Rusul', 3, 92),
+  _JuzInfo('Tilka Ar-Rusul', 3, 91),
   _JuzInfo('Lan Tana Loo', 4, 23),
   _JuzInfo('Wal-Muhsanat', 4, 147),
-  _JuzInfo('La Yuhibbullah', 5, 81),
+  _JuzInfo('La Yuhibbullah', 5, 82),
   _JuzInfo('Wa Iza Sami\'u', 6, 110),
   _JuzInfo('Wa Lau Annana', 7, 87),
   _JuzInfo('Qalal Malao', 8, 40),
-  _JuzInfo('Wa A\'lamu', 9, 92),
+  _JuzInfo('Wa A\'lamu', 9, 93),
   _JuzInfo('Ya\'taziroon', 11, 5),
   _JuzInfo('Wa Mamin Da\'abba', 12, 52),
-  _JuzInfo('Wa Ma Ubarri\'u', 14, 52),
+  _JuzInfo('Wa Ma Ubarri\'u', 15, 1),
   _JuzInfo('Rubama', 16, 128),
   _JuzInfo('Subhanallazi', 18, 74),
   _JuzInfo('Qal Alam', 20, 135),
   _JuzInfo('Iqtaraba', 22, 78),
   _JuzInfo('Qad Aflaha', 25, 20),
-  _JuzInfo('Wa Qalallazina', 27, 55),
+  _JuzInfo('Wa Qalallazina', 27, 59),
   _JuzInfo('Aman Khalaq', 29, 44),
   _JuzInfo('Utlu Ma Oohiya', 33, 30),
-  _JuzInfo('Wa Man Yaqnut', 36, 27),
+  _JuzInfo('Wa Man Yaqnut', 36, 21),
   _JuzInfo('Wa Mali', 39, 31),
   _JuzInfo('Faman Azlam', 41, 46),
   _JuzInfo('Elahe Yuraddu', 45, 37),
@@ -132,49 +143,26 @@ class _ProgressScreenState extends State<ProgressScreen> {
       _error = null;
     });
 
-    final data = await QuranAPI.getAllJuzStarts();
-    // Override Juz starts that differ from source data (corrected boundaries)
-    final corrected = data.map<JuzStart>((j) {
-      if (j.juzNumber == 11) {
-        return JuzStart(
-          juzNumber: 11,
-          surahNumber: 9,
-          surahEnglishName: 'At-Tawba',
-          ayahNumberInSurah: 94,
-        );
-      }
-      if (j.juzNumber == 14) {
-        return JuzStart(
-          juzNumber: 14,
-          surahNumber: 15,
-          surahEnglishName: 'Al-Hijr',
-          ayahNumberInSurah: 2,
-        );
-      }
-      if (j.juzNumber == 20) {
-        return JuzStart(
-          juzNumber: 20,
-          surahNumber: 27,
-          surahEnglishName: 'An-Naml',
-          ayahNumberInSurah: 60,
-        );
-      }
-      if (j.juzNumber == 21) {
-        return JuzStart(
-          juzNumber: 21,
-          surahNumber: 29,
-          surahEnglishName: 'Al-Ankaboot',
-          ayahNumberInSurah: 45,
-        );
-      }
-      return j;
-    }).toList();
+    // Use Indo-Pak start boundaries for all 30 Juz (no API dependency for Juz tab).
+    final list = <JuzStart>[];
+    for (int i = 0; i < _indoPakJuzStarts.length && i < 30; i++) {
+      final start = _indoPakJuzStarts[i];
+      final name = (start.surah >= 1 && start.surah <= _surahEnglishNames.length)
+          ? _surahEnglishNames[start.surah - 1]
+          : 'Surah ${start.surah}';
+      list.add(JuzStart(
+        juzNumber: i + 1,
+        surahNumber: start.surah,
+        surahEnglishName: name,
+        ayahNumberInSurah: start.ayah,
+      ));
+    }
 
     setState(() {
-      _juzStarts = corrected;
-      _filtered = corrected;
+      _juzStarts = list;
+      _filtered = list;
       _isLoading = false;
-      if (corrected.isEmpty) {
+      if (list.isEmpty) {
         _error = 'Failed to load Juz list.';
       }
     });
