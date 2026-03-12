@@ -13,10 +13,11 @@ void main() async {
 
   try {
     await NotificationService.initialize();
+    // Brief delay so Android can show permission dialog and user can accept before we schedule.
+    await Future.delayed(const Duration(milliseconds: 1500));
     await NotificationService.scheduleEvery3HoursReminder();
-    } catch (e) {
-    // Optional: log the error if needed
-    // print('Notification initialization failed: $e');
-    }
+  } catch (_) {
+    // Notification scheduling failed; app still runs.
+  }
   runApp(const QuranCompanionApp());
 }

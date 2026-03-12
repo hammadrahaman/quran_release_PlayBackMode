@@ -23,14 +23,43 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     ReviewService.recordAppOpen();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _maybeShowReview();
-      _maybeShowUpdateDialog();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _maybeShowUpdateDialog();
+      if (!mounted) return;
+      await Future.delayed(const Duration(milliseconds: 400));
+      if (!mounted) return;
+      await _maybeShowReview();
     });
   }
 
   Future<void> _maybeShowReview() async {
-    await ReviewService.maybeRequestReview();
+    final shouldShow = await ReviewService.shouldShowReviewDialog();
+    if (!mounted || !shouldShow) return;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Enjoying Iqra Quran Daily?'),
+        content: const Text(
+          'Your rating helps others discover the app. Would you take a moment to rate us on the Play Store?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              ReviewService.recordReviewLater();
+              Navigator.of(ctx).pop();
+            },
+            child: const Text('Maybe Later'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              ReviewService.requestReview();
+            },
+            child: const Text('Rate'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _maybeShowUpdateDialog() async {

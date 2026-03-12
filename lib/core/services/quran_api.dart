@@ -23,6 +23,34 @@ class QuranAPI {
     }
   }
 
+  /// Fetches transliteration for a surah from API. Returns null on failure.
+  static Future<List<String>?> _fetchTransliterationForSurah(int number) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/surah/$number/en.transliteration'),
+      );
+      if (response.statusCode != 200) return null;
+      final data = json.decode(response.body) as Map<String, dynamic>?;
+      final dataData = data?['data'];
+      if (dataData == null) return null;
+      List<dynamic>? ayahList;
+      if (dataData['ayahs'] is List) {
+        ayahList = dataData['ayahs'] as List<dynamic>;
+      } else if (dataData['surahs'] is List) {
+        final surahs = dataData['surahs'] as List<dynamic>;
+        if (surahs.isNotEmpty) {
+          ayahList = (surahs.first as Map<String, dynamic>)['ayahs'] as List<dynamic>?;
+        }
+      }
+      if (ayahList == null || ayahList.isEmpty) return null;
+      return ayahList
+          .map<String>((a) => (a as Map<String, dynamic>)['text'] as String? ?? '')
+          .toList();
+    } catch (_) {
+      return null;
+    }
+  }
+
   static bool _looksLikeBismillah(String s) {
     final t = s.replaceAll('\uFEFF', '').trim(); // remove BOM if present
     // Works for both "simple" and "uthmani" text
@@ -50,6 +78,7 @@ class QuranAPI {
           text: a.text,
           numberInSurah: i + 1, // renumber so Alif Lam Meem becomes Ayah 1
           translation: a.translation,
+          transliteration: a.transliteration,
         );
       });
     }
@@ -109,11 +138,36 @@ class QuranAPI {
               text: a['text'] ?? '',
               numberInSurah: a['numberInSurah'] ?? (i + 1),
               translation: tr?['text'] as String?,
+              transliteration: null, // filled below if API provides it
             ),
           );
         }
 
-        final ayahs = _stripBismillahIfNeeded(number, built);
+        var ayahs = _stripBismillahIfNeeded(number, built);
+        final transliterations = await _fetchTransliterationForSurah(number);
+        if (transliterations != null && transliterations.isNotEmpty) {
+          List<String> toUse = transliterations;
+          if (transliterations.length == ayahs.length + 1) {
+            toUse = transliterations.sublist(1);
+          } else if (transliterations.length != ayahs.length) {
+            toUse = transliterations.length >= ayahs.length
+                ? transliterations.sublist(0, ayahs.length)
+                : [...transliterations, ...List.filled(ayahs.length - transliterations.length, '')];
+          }
+          if (toUse.length == ayahs.length) {
+            ayahs = List.generate(ayahs.length, (i) {
+              final a = ayahs[i];
+              final tr = toUse[i];
+              return Ayah(
+                number: a.number,
+                text: a.text,
+                numberInSurah: a.numberInSurah,
+                translation: a.translation,
+                transliteration: tr.isEmpty ? null : tr,
+              );
+            });
+          }
+        }
 
         return SurahDetail(
           number: arabicSurah['number'] ?? number,
@@ -290,6 +344,7 @@ class SurahDetail {
           text: arabic['ayahs'][i]['text'] ?? '',
           numberInSurah: arabic['ayahs'][i]['numberInSurah'] ?? (i + 1),
           translation: translation['ayahs'][i]['text'],
+          transliteration: null,
         ),
       );
     }
@@ -310,11 +365,13 @@ class Ayah {
   final String text;
   final int numberInSurah;
   final String? translation;
+  final String? transliteration;
 
   Ayah({
     required this.number,
     required this.text,
     required this.numberInSurah,
     this.translation,
+    this.transliteration,
   });
 }

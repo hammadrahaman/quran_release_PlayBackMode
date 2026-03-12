@@ -2,29 +2,40 @@ import 'package:in_app_review/in_app_review.dart';
 import '../storage/local_storage.dart';
 
 class ReviewService {
-  static const int _minOpensBeforePrompt = 5;
-  static const int _daysBetweenPrompts = 30;
+  static const int _minOpensBeforePrompt = 3;
+  static const int _daysBetweenPrompts = 21;
 
-  static Future<void> maybeRequestReview() async {
+  /// Returns true if the app should show the rate-us dialog (e.g. after 3+ opens, 21+ days since last prompt).
+  static Future<bool> shouldShowReviewDialog() async {
     final count = LocalStorage.getAppOpenCount();
     final lastRequest = LocalStorage.getLastReviewRequestDate();
 
-    if (count < _minOpensBeforePrompt) return;
+    if (count < _minOpensBeforePrompt) return false;
 
     if (lastRequest != null) {
       try {
         final last = DateTime.parse(lastRequest);
-        if (DateTime.now().difference(last).inDays < _daysBetweenPrompts) return;
+        if (DateTime.now().difference(last).inDays < _daysBetweenPrompts) return false;
       } catch (_) {
-        return;
+        return false;
       }
     }
 
     final inAppReview = InAppReview.instance;
     final available = await inAppReview.isAvailable();
-    if (!available) return;
+    return available;
+  }
 
-    await inAppReview.requestReview();
+  /// Calls the native in-app review (Play Store / App Store) and records the request date.
+  static Future<void> requestReview() async {
+    try {
+      await InAppReview.instance.requestReview();
+      LocalStorage.setLastReviewRequestDate(DateTime.now().toIso8601String());
+    } catch (_) {}
+  }
+
+  /// Records that the user chose "Later" so we don't show the dialog again for a while.
+  static void recordReviewLater() {
     LocalStorage.setLastReviewRequestDate(DateTime.now().toIso8601String());
   }
 

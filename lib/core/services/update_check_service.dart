@@ -4,10 +4,10 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../storage/local_storage.dart';
 
-/// Remote JSON should be: { "latest_version": "1.0.0", "store_url_android": "https://...", "store_url_ios": "https://..." }
-/// Set [versionCheckUrl] to your endpoint, or null to skip update check.
+/// Remote JSON: { "latest_version": "1.0.0", "store_url_android": "https://play.google.com/store/apps/details?id=...", "store_url_ios": "https://apps.apple.com/..." }
+/// Set [versionCheckUrl] to your JSON endpoint to show "Update available" popup when a new version exists.
 class UpdateCheckService {
-  static const String? versionCheckUrl = null; // Set e.g. 'https://yourserver.com/app-version.json'
+  static const String? versionCheckUrl = null; // e.g. 'https://yourserver.com/version.json' or raw GitHub URL
 
   static Future<bool> isUpdateAvailable() async {
     if (versionCheckUrl == null || versionCheckUrl!.isEmpty) return false;

@@ -13,8 +13,8 @@ class NotificationService {
   static Future<void> initialize() async {
     tz.initializeTimeZones();
     try {
-      final String timeZoneName = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(timeZoneName));
+      final timeZoneInfo = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(timeZoneInfo.identifier));
     } catch (_) {
       try {
         tz.setLocalLocation(tz.getLocation('UTC'));
@@ -122,48 +122,56 @@ class NotificationService {
 
   static Future<void> scheduleEvery3HoursReminder() async {
     if (_periodicReminderScheduled) return;
-  try {
-    // Clear old schedule to avoid duplicates across app restarts.
-    await _notifications.cancel(3000);
-    for (int i = 0; i < 10; i++) {
-      await _notifications.cancel(3001 + i);
-    }
+    try {
+      // Clear old schedule to avoid duplicates across app restarts.
+      await _notifications.cancel(3000);
+      for (int i = 0; i < 10; i++) {
+        await _notifications.cancel(3001 + i);
+      }
 
-    final now = tz.TZDateTime.now(tz.local);
-    // Schedule at 0:00, 4:00, 8:00, 12:00, 16:00, 20:00 (every 4 hours) – 6 reminders per day
-    const reminderHours = [0, 4, 8, 12, 16, 20];
+      final now = tz.TZDateTime.now(tz.local);
+      // Schedule at 0:00, 4:00, 8:00, 12:00, 16:00, 20:00 (every 4 hours) – 6 reminders per day.
+      // Use matchDateTimeComponents.time so each schedule repeats daily at that time.
+      const reminderHours = [0, 4, 8, 12, 16, 20];
 
-    for (int i = 0; i < reminderHours.length; i++) {
-      final t = tz.TZDateTime(
-        tz.local,
-        now.year,
-        now.month,
-        now.day,
-        reminderHours[i],
-        0,
-      );
-      final scheduled = t.isBefore(now) ? t.add(const Duration(days: 1)) : t;
-
-      await _notifications.zonedSchedule(
-        3001 + i,
-        'Time to read 📖',
-        _randomMessage(_quranMessages),
-        scheduled,
-        _notificationDetails(
-          channelId: 'quran_3hour_channel',
-          channelName: 'Quran Reminder (every 4–5 hours)',
-        ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-        matchDateTimeComponents: DateTimeComponents.time,
-      );
-    }
-
-    _periodicReminderScheduled = true;
-          } catch (e) {
-          print('Error scheduling periodic reminder: $e');
+      for (int i = 0; i < reminderHours.length; i++) {
+        var scheduled = tz.TZDateTime(
+          tz.local,
+          now.year,
+          now.month,
+          now.day,
+          reminderHours[i],
+          0,
+        );
+        // Ensure first trigger is in the future (next occurrence of this time).
+        if (!scheduled.isAfter(now)) {
+          scheduled = scheduled.add(const Duration(days: 1));
         }
+
+        await _notifications.zonedSchedule(
+          3001 + i,
+          'Time to read 📖',
+          _randomMessage(_quranMessages),
+          scheduled,
+          _notificationDetails(
+            channelId: 'quran_3hour_channel',
+            channelName: 'Quran Reminder (every 4 hours)',
+          ),
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          matchDateTimeComponents: DateTimeComponents.time,
+        );
+      }
+
+      _periodicReminderScheduled = true;
+    } catch (e) {
+      // Do not set _periodicReminderScheduled so next app launch can retry.
+      assert(() {
+        print('NotificationService: scheduleEvery3HoursReminder failed: $e');
+        return true;
+      }());
+    }
   }
 
   /* -------------------- MOTIVATIONAL -------------------- */
@@ -227,8 +235,15 @@ class NotificationService {
         channelName,
         importance: Importance.high,
         priority: Priority.high,
+        playSound: true,
+        enableVibration: true,
+        visibility: NotificationVisibility.public,
       ),
-      iOS: const DarwinNotificationDetails(),
+      iOS: const DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      ),
     );
   }
 

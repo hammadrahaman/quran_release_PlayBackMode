@@ -32,7 +32,6 @@ class AyahScreen extends StatefulWidget {
 
 class _AyahScreenState extends State<AyahScreen> {
   SurahDetail? surahDetail;
-  List<String>? _transliterationList;
   bool isLoading = true;
   int currentAyahIndex = 0;
   double arabicFontSize = 32.0;
@@ -115,10 +114,8 @@ class _AyahScreenState extends State<AyahScreen> {
       ..write('${widget.surahName} ${widget.surahNumber}:${ayah.numberInSurah}\n')
       ..write(ayah.text);
 
-    if (_transliterationList != null &&
-        currentAyahIndex < _transliterationList!.length &&
-        _transliterationList![currentAyahIndex].trim().isNotEmpty) {
-      buffer.write('\n\n${_transliterationList![currentAyahIndex]}');
+    if ((ayah.transliteration ?? '').trim().isNotEmpty) {
+      buffer.write('\n\n${ayah.transliteration}');
     }
     if ((ayah.translation ?? '').isNotEmpty) {
       buffer.write('\n\n${ayah.translation}');
@@ -151,24 +148,7 @@ class _AyahScreenState extends State<AyahScreen> {
     if (data != null) {
       LocalStorage.saveLastRead(widget.surahNumber, currentAyahIndex + 1);
       _markCurrentAyahAsRead();
-      _loadTransliteration(data.ayahs.length);
     }
-  }
-
-  void _loadTransliteration(int ayahCount) {
-    QuranAPI.getTransliterationForSurah(widget.surahNumber).then((list) {
-      if (!mounted || list.isEmpty) return;
-      // API includes Bismillah as first ayah for surahs 2–113; we strip it in ayahs, so align lists.
-      List<String> aligned = list;
-      if (widget.surahNumber != 1 && widget.surahNumber != 9 &&
-          list.length > ayahCount &&
-          ayahCount > 0) {
-        aligned = list.sublist(1);
-      }
-      if (aligned.length >= ayahCount && mounted) {
-        setState(() => _transliterationList = aligned);
-      }
-    });
   }
 
  Future<void> _toggleAudio() async {
@@ -670,23 +650,38 @@ class _AyahScreenState extends State<AyahScreen> {
                                       ),
                                     ),
                                     const SizedBox(height: 16),
-                                    if (showTranslation) ...[
-                                      if (_transliterationList != null &&
-                                          currentAyahIndex < _transliterationList!.length &&
-                                          _transliterationList![currentAyahIndex].trim().isNotEmpty)
+                                    if (showTranslation &&
+                                        (surahDetail!.ayahs[currentAyahIndex].transliteration !=
+                                                null ||
+                                            surahDetail!
+                                                    .ayahs[currentAyahIndex]
+                                                    .translation !=
+                                                null)) ...[
+                                      if (surahDetail!
+                                              .ayahs[currentAyahIndex]
+                                              .transliteration !=
+                                          null)
                                         Padding(
-                                          padding: const EdgeInsets.only(bottom: 14),
+                                          padding: const EdgeInsets.only(bottom: 12),
                                           child: TransliterationWidget(
-                                            transliteration: _transliterationList![currentAyahIndex],
+                                            transliteration: surahDetail!
+                                                .ayahs[currentAyahIndex]
+                                                .transliteration!,
                                             isDark: isDark,
                                           ),
                                         ),
-                                      if (surahDetail!.ayahs[currentAyahIndex].translation != null)
+                                      if (surahDetail!
+                                              .ayahs[currentAyahIndex]
+                                              .translation !=
+                                          null)
                                         TranslationWidget(
-                                          translation: surahDetail!.ayahs[currentAyahIndex].translation!,
+                                          translation: surahDetail!
+                                              .ayahs[currentAyahIndex]
+                                              .translation!,
                                           isDark: isDark,
                                         ),
-                                    ],const SizedBox(height: 14),
+                                    ],
+                                    const SizedBox(height: 14),
                                   ],
                                 ),
                               ),
