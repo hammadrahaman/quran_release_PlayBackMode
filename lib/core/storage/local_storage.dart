@@ -281,4 +281,26 @@ class LocalStorage {
     }
     return sum;
   }
+
+  // ----------------------------
+  // In-app review
+  // ----------------------------
+
+  static int getAppOpenCount() =>
+      _settings.get('appOpenCount', defaultValue: 0) as int;
+  static void incrementAppOpenCount() =>
+      _settings.put('appOpenCount', getAppOpenCount() + 1);
+  static String? getLastReviewRequestDate() =>
+      _settings.get('lastReviewRequestDate', defaultValue: null) as String?;
+  static void setLastReviewRequestDate(String isoDate) =>
+      _settings.put('lastReviewRequestDate', isoDate);
+
+  // ----------------------------
+  // Update prompt (dismissed version)
+  // ----------------------------
+
+  static String? getLastDismissedUpdateVersion() =>
+      _settings.get('lastDismissedUpdateVersion', defaultValue: null) as String?;
+  static void setLastDismissedUpdateVersion(String version) =>
+      _settings.put('lastDismissedUpdateVersion', version);
 }

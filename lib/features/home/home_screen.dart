@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../core/storage/local_storage.dart';
 import '../../core/services/quran_api.dart';
+import '../../core/services/review_service.dart';
+import '../../core/services/update_check_service.dart';
 import '../quran/surah_list_screen.dart';
 import '../quran/ayah_screen.dart';
 
@@ -15,6 +18,62 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   _Range _range = _Range.today;
+
+  @override
+  void initState() {
+    super.initState();
+    ReviewService.recordAppOpen();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _maybeShowReview();
+      _maybeShowUpdateDialog();
+    });
+  }
+
+  Future<void> _maybeShowReview() async {
+    await ReviewService.maybeRequestReview();
+  }
+
+  Future<void> _maybeShowUpdateDialog() async {
+    if (!mounted) return;
+    final info = await UpdateCheckService.fetchVersionInfo();
+    if (info == null || !mounted) return;
+    final latest = info['latest_version'] ?? '';
+    final storeUrl = info['store_url'] ?? '';
+    if (latest.isEmpty) return;
+
+    final pkg = await PackageInfo.fromPlatform();
+    if (!UpdateCheckService.isVersionNewer(latest, pkg.version)) return;
+    if (LocalStorage.getLastDismissedUpdateVersion() == latest) return;
+
+    if (!mounted) return;
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Update available'),
+        content: Text(
+          'A new version ($latest) is available. Update now for the latest features and improvements.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              UpdateCheckService.markUpdateDialogDismissed(latest);
+              Navigator.of(ctx).pop();
+            },
+            child: const Text('Later'),
+          ),
+          FilledButton(
+            onPressed: () {
+              UpdateCheckService.markUpdateDialogDismissed(latest);
+              Navigator.of(ctx).pop();
+              UpdateCheckService.openStore(storeUrl.isNotEmpty ? storeUrl : null);
+            },
+            child: const Text('Update'),
+          ),
+        ],
+      ),
+    );
+  }
 
   Future<void> _continueReading() async {
     final lastRead = LocalStorage.getLastRead();

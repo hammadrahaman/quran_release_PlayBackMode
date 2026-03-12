@@ -155,6 +155,25 @@ class QuranAPI {
     return null;
   }
 
+  /// Fetches transliteration for a surah from API (Latin script).
+  /// Returns list of transliteration strings in ayah order, or empty list on failure.
+  static Future<List<String>> getTransliterationForSurah(int number) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/surah/$number/en.transliteration'),
+      );
+      if (response.statusCode != 200) return [];
+      final data = json.decode(response.body);
+      final ayahs = data['data']?['ayahs'] as List?;
+      if (ayahs == null) return [];
+      return ayahs
+          .map<String>((a) => (a as Map<String, dynamic>)['text'] as String? ?? '')
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
   static Future<List<JuzStart>> getAllJuzStarts() async {
     try {
       await _loadLocalData();

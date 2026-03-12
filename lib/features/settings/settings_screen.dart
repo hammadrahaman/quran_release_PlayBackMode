@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../core/storage/local_storage.dart';
 import '../../app.dart';
 
@@ -13,6 +14,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   int dailyGoal = 5;
   bool isDarkMode = false;
   double arabicFontSize = 32.0;
+  String appVersion = '1.0.0';
   static const String _privacyPolicy = '''Privacy Policy - Iqra Quran Daily
 
 Iqra Quran Daily is developed to help users read, listen to, and track their daily Quran recitation in a respectful and distraction-free environment.
@@ -82,12 +84,16 @@ hafsarahman007@gmail.com.
     loadSettings();
   }
 
-  void loadSettings() {
-    setState(() {
-      dailyGoal = LocalStorage.getDailyGoal();
-      isDarkMode = LocalStorage.isDarkMode();
-      arabicFontSize = LocalStorage.getArabicFontSize();
-    });
+  Future<void> loadSettings() async {
+    final info = await PackageInfo.fromPlatform();
+    if (mounted) {
+      setState(() {
+        dailyGoal = LocalStorage.getDailyGoal();
+        isDarkMode = LocalStorage.isDarkMode();
+        arabicFontSize = LocalStorage.getArabicFontSize();
+        appVersion = info.version;
+      });
+    }
   }
 
   void updateDailyGoal(int change) {
@@ -355,7 +361,7 @@ hafsarahman007@gmail.com.
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Version 1.0.0',
+                      'Version $appVersion',
                       style: TextStyle(
                         color: Colors.grey[700],
                         fontSize: 12,
