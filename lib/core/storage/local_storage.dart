@@ -4,7 +4,12 @@ class LocalStorage {
   static final Box _settings = Hive.box('settings');
   static final Box _progress = Hive.box('progress');
   static final Box _bookmarks = Hive.box('bookmarks');
+  // Play Mode
+  static String getPlayMode() =>
+      _settings.get('playMode', defaultValue: 'manual');
 
+  static void setPlayMode(String mode) =>
+      _settings.put('playMode', mode);
   // ----------------------------
   // Existing (keep unchanged APIs)
   // ----------------------------

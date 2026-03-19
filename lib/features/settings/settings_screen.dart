@@ -15,6 +15,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool isDarkMode = false;
   double arabicFontSize = 32.0;
   String appVersion = '1.0.0';
+  String playMode = 'manual';
   static const String _privacyPolicy = '''Privacy Policy - Iqra Quran Daily
 
 Iqra Quran Daily is developed to help users read, listen to, and track their daily Quran recitation in a respectful and distraction-free environment.
@@ -91,6 +92,7 @@ hafsarahman007@gmail.com.
         dailyGoal = LocalStorage.getDailyGoal();
         isDarkMode = LocalStorage.isDarkMode();
         arabicFontSize = LocalStorage.getArabicFontSize();
+        playMode = LocalStorage.getPlayMode(); // ✅ NEW
         appVersion = info.version;
       });
     }
@@ -153,7 +155,50 @@ hafsarahman007@gmail.com.
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          // Daily Goal
+          const SizedBox(height: 20),
+          const Text(
+            'Playback Mode',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+
+          RadioListTile<String>(
+            title: const Text('Manual Reading'),
+            value: 'manual',
+            groupValue: playMode,
+            onChanged: (value) {
+              setState(() {
+                playMode = value!;
+                LocalStorage.setPlayMode(playMode);
+              });
+            },
+          ),
+
+          RadioListTile<String>(
+            title: const Text('Continuous Recitation'),
+            subtitle: const Text('Auto play next ayah'),
+            value: 'auto',
+            groupValue: playMode,
+            onChanged: (value) {
+              setState(() {
+                playMode = value!;
+                LocalStorage.setPlayMode(playMode);
+              });
+            },
+          ),
+
+          RadioListTile<String>(
+            title: const Text('Repeat Ayah'),
+            subtitle: const Text('For memorization'),
+            value: 'repeat',
+            groupValue: playMode,
+            onChanged: (value) {
+              setState(() {
+                playMode = value!;
+                LocalStorage.setPlayMode(playMode);
+              });
+            },
+          ),
           Text(
             'Daily goal',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(

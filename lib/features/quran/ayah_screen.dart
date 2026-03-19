@@ -37,10 +37,11 @@ class _AyahScreenState extends State<AyahScreen> {
   double arabicFontSize = 32.0;
   bool isPlaying = false;
   bool showTranslation = true;
-
+  final ScrollController _scrollController = ScrollController();
   final DateTime _sessionStart = DateTime.now();
   final Set<int> _sessionGlobalAyahs = {};
   int _sessionHasanat = 0;
+  bool _isHandlingCompletion = false;
 
   StreamSubscription<PlayerState>? _playerSub;
 
@@ -50,16 +51,48 @@ class _AyahScreenState extends State<AyahScreen> {
     arabicFontSize = LocalStorage.getArabicFontSize();
     currentAyahIndex = widget.initialAyahIndex;
 
-    _playerSub = AudioService.playerStateStream.listen((state) {
-        if (!mounted) return;
+    _playerSub = AudioService.playerStateStream.listen((state) async {
+      if (!mounted) return;
 
-        if (state.processingState == ProcessingState.completed) {
+      if (state.processingState == ProcessingState.completed) {
+        if (_isHandlingCompletion) return;
+        _isHandlingCompletion = true;
+
+        try {
+          final mode = LocalStorage.getPlayMode();
+
+          if (mode == 'auto') {
+            if (surahDetail == null) return;
+
+            final moved = await _advanceToNextAyah(scrollImmediate: true);
+            if (!moved) {
+              await nextAyah();
+              return;
+            }
+
+            if (!mounted || LocalStorage.getPlayMode() != 'auto') return;
+
+            await Future.delayed(const Duration(milliseconds: 300));
+            if (!mounted || surahDetail == null) return;
+
+            final nextGlobalAyah = surahDetail!.ayahs[currentAyahIndex].number;
+            await AudioService.playAyah(nextGlobalAyah);
+          } else if (mode == 'repeat') {
+            if (surahDetail == null) return;
+            final currentGlobalAyah = surahDetail!.ayahs[currentAyahIndex].number;
+            await AudioService.playAyah(currentGlobalAyah);
+          } else {
             setState(() => isPlaying = false);
-            return;
+          }
+        } finally {
+          _isHandlingCompletion = false;
         }
 
-        setState(() => isPlaying = state.playing);
-        });
+        return;
+      }
+
+      setState(() => isPlaying = state.playing);
+    });
 
     loadSurah();
   }
@@ -68,6 +101,7 @@ class _AyahScreenState extends State<AyahScreen> {
   void dispose() {
     _playerSub?.cancel();
     AudioService.stop();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -235,19 +269,67 @@ class _AyahScreenState extends State<AyahScreen> {
     );
   }
 
-  Future<void> nextAyah() async {
-    await AudioService.stop();
-    setState(() => isPlaying = false);
+  Future<void> _scrollToTop({bool immediate = false}) async {
+    if (!_scrollController.hasClients) return;
+    final target = _scrollController.position.minScrollExtent;
 
-    if (surahDetail == null) return;
+    // Ensure the new ayah is focused even if a gesture/ballistic scroll was active.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      if (immediate) {
+        _scrollController.jumpTo(target);
+      } else {
+        _scrollController.animateTo(
+          target,
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOut,
+        );
+      }
+    });
 
-    if (currentAyahIndex < surahDetail!.ayahs.length - 1) {
-      setState(() => currentAyahIndex++);
-      LocalStorage.saveLastRead(widget.surahNumber, currentAyahIndex + 1);
-      _markCurrentAyahAsRead();
+    if (immediate) {
+      await Future.delayed(const Duration(milliseconds: 90));
+      if (!mounted || !_scrollController.hasClients) return;
+      if ((_scrollController.offset - target).abs() > 1) {
+        _scrollController.jumpTo(target);
+      }
       return;
     }
 
+    await _scrollController.animateTo(
+      target,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOut,
+    );
+  }
+
+  Future<bool> _advanceToNextAyah({bool scrollImmediate = false}) async {
+    if (surahDetail == null) return false;
+    if (currentAyahIndex >= surahDetail!.ayahs.length - 1) return false;
+
+    setState(() {
+      currentAyahIndex++;
+    });
+
+    LocalStorage.saveLastRead(widget.surahNumber, currentAyahIndex + 1);
+    _markCurrentAyahAsRead();
+    await _scrollToTop(immediate: scrollImmediate);
+    return true;
+  }
+
+  Future<void> nextAyah() async {
+    if (AudioService.isPlaying) {
+      await AudioService.stop();
+    }
+
+    setState(() => isPlaying = false);
+
+    final moved = await _advanceToNextAyah();
+    if (moved) {
+      return;
+    }
+
+    // 👇 THIS PART WAS MISSING
     await _playCompletionCelebration();
 
     final shouldContinue = await SurahCompletionDialog.show(
@@ -552,6 +634,7 @@ class _AyahScreenState extends State<AyahScreen> {
                         child: GestureDetector(
                           onHorizontalDragEnd: _handleSwipe,
                           child: SingleChildScrollView(
+                            controller: _scrollController,
                             padding: const EdgeInsets.all(18),
                             child: Container(
                               decoration: BoxDecoration(
