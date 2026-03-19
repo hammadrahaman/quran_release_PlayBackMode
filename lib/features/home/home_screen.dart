@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../../core/storage/local_storage.dart';
+import '../../core/services/play_store_update_service.dart';
 import '../../core/services/quran_api.dart';
 import '../../core/services/review_service.dart';
 import '../../core/services/update_check_service.dart';
@@ -51,9 +52,13 @@ class _HomeScreenState extends State<HomeScreen> {
             child: const Text('Maybe Later'),
           ),
           FilledButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.of(ctx).pop();
-              ReviewService.requestReview();
+              final ok = await ReviewService.requestReview();
+              if (!mounted || ok) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Unable to open review right now.')),
+              );
             },
             child: const Text('Rate'),
           ),
@@ -63,43 +68,114 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _maybeShowUpdateDialog() async {
+    // Prefer Google Play In-App Update (no custom URL needed).
+    final playInfo = await PlayStoreUpdateService.checkForUpdate();
+    if (playInfo != null &&
+        PlayStoreUpdateService.isUpdateAvailable(playInfo) &&
+        mounted) {
+      final latestCode = playInfo.availableVersionCode;
+      final latest = latestCode != null ? 'v$latestCode' : 'new';
+      final dismissedKey = 'play_$latest';
+      final immediate = PlayStoreUpdateService.isImmediateAllowed(playInfo);
+      final flexible = PlayStoreUpdateService.isFlexibleAllowed(playInfo);
+      final isForced = immediate && !flexible;
+
+      if (!isForced &&
+          LocalStorage.getLastDismissedUpdateVersion() == dismissedKey) {
+        return;
+      }
+
+      showDialog<void>(
+        context: context,
+        barrierDismissible: !isForced,
+        builder: (ctx) => PopScope(
+          canPop: !isForced,
+          child: AlertDialog(
+            title: const Text('Update available'),
+            content: Text(
+              isForced
+                  ? 'A required update is available. Please update to continue.'
+                  : 'A newer app version is available on Play Store.',
+            ),
+            actions: [
+              if (!isForced)
+                TextButton(
+                  onPressed: () {
+                    LocalStorage.setLastDismissedUpdateVersion(dismissedKey);
+                    Navigator.of(ctx).pop();
+                  },
+                  child: const Text('Later'),
+                ),
+              FilledButton(
+                onPressed: () async {
+                  Navigator.of(ctx).pop();
+                  final updated =
+                      await PlayStoreUpdateService.performImmediateUpdate();
+                  if (!updated) {
+                    await UpdateCheckService.openStore(null);
+                  }
+                },
+                child: const Text('Update'),
+              ),
+            ],
+          ),
+        ),
+      );
+      return;
+    }
+
+    // Fallback: URL-based remote version check.
     if (!mounted) return;
     final info = await UpdateCheckService.fetchVersionInfo();
     if (info == null || !mounted) return;
     final latest = info['latest_version'] ?? '';
     final storeUrl = info['store_url'] ?? '';
+    final forceFlag = (info['force_update'] ?? '').toLowerCase() == 'true';
+    final minSupportedVersion = info['min_supported_version'];
     if (latest.isEmpty) return;
 
     final pkg = await PackageInfo.fromPlatform();
-    if (!UpdateCheckService.isVersionNewer(latest, pkg.version)) return;
-    if (LocalStorage.getLastDismissedUpdateVersion() == latest) return;
+    final hasUpdate = UpdateCheckService.isVersionNewer(latest, pkg.version);
+    final isForced = UpdateCheckService.isForceUpdate(
+      currentVersion: pkg.version,
+      latestVersion: latest,
+      minSupportedVersion: minSupportedVersion,
+      forceFlag: forceFlag,
+    );
+    if (!hasUpdate && !isForced) return;
+    if (!isForced && LocalStorage.getLastDismissedUpdateVersion() == latest) return;
 
     if (!mounted) return;
     showDialog<void>(
       context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
+      barrierDismissible: !isForced,
+      builder: (ctx) => PopScope(
+        canPop: !isForced,
+        child: AlertDialog(
         title: const Text('Update available'),
         content: Text(
-          'A new version ($latest) is available. Update now for the latest features and improvements.',
+          isForced
+              ? 'Version $latest is required to continue using the app. Please update now.'
+              : 'A new version ($latest) is available. Update now for the latest features and improvements.',
         ),
         actions: [
-          TextButton(
-            onPressed: () {
-              UpdateCheckService.markUpdateDialogDismissed(latest);
-              Navigator.of(ctx).pop();
-            },
-            child: const Text('Later'),
-          ),
+          if (!isForced)
+            TextButton(
+              onPressed: () {
+                UpdateCheckService.markUpdateDialogDismissed(latest);
+                Navigator.of(ctx).pop();
+              },
+              child: const Text('Later'),
+            ),
           FilledButton(
             onPressed: () {
-              UpdateCheckService.markUpdateDialogDismissed(latest);
               Navigator.of(ctx).pop();
               UpdateCheckService.openStore(storeUrl.isNotEmpty ? storeUrl : null);
             },
             child: const Text('Update'),
           ),
         ],
+      ),
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -130,9 +131,27 @@ class NotificationService {
       }
 
       final now = tz.TZDateTime.now(tz.local);
-      // Schedule at 0:00, 4:00, 8:00, 12:00, 16:00, 20:00 (every 4 hours) – 6 reminders per day.
-      // Use matchDateTimeComponents.time so each schedule repeats daily at that time.
-      const reminderHours = [0, 4, 8, 12, 16, 20];
+      final androidPlugin = _notifications
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+
+      bool canUseExact = true;
+      if (androidPlugin != null) {
+        try {
+          canUseExact = await androidPlugin.canScheduleExactNotifications() ?? false;
+        } catch (_) {
+          // Keep default true on older Android/plugin behaviors.
+        }
+      }
+
+      final scheduleMode = canUseExact
+          ? AndroidScheduleMode.exactAllowWhileIdle
+          : AndroidScheduleMode.inexactAllowWhileIdle;
+
+      // True every-3-hours schedule: 0,3,6,9,12,15,18,21 (8 reminders/day).
+      // Repeats daily at these local times.
+      const reminderHours = [0, 3, 6, 9, 12, 15, 18, 21];
 
       for (int i = 0; i < reminderHours.length; i++) {
         var scheduled = tz.TZDateTime(
@@ -155,9 +174,9 @@ class NotificationService {
           scheduled,
           _notificationDetails(
             channelId: 'quran_3hour_channel',
-            channelName: 'Quran Reminder (every 4 hours)',
+            channelName: 'Quran Reminder (every 3 hours)',
           ),
-          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          androidScheduleMode: scheduleMode,
           uiLocalNotificationDateInterpretation:
               UILocalNotificationDateInterpretation.absoluteTime,
           matchDateTimeComponents: DateTimeComponents.time,
@@ -167,10 +186,7 @@ class NotificationService {
       _periodicReminderScheduled = true;
     } catch (e) {
       // Do not set _periodicReminderScheduled so next app launch can retry.
-      assert(() {
-        print('NotificationService: scheduleEvery3HoursReminder failed: $e');
-        return true;
-      }());
+      debugPrint('NotificationService: scheduleEvery3HoursReminder failed: $e');
     }
   }
 

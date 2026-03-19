@@ -17,21 +17,22 @@ class ReviewService {
         final last = DateTime.parse(lastRequest);
         if (DateTime.now().difference(last).inDays < _daysBetweenPrompts) return false;
       } catch (_) {
-        return false;
+        // Ignore invalid stored date and allow showing dialog.
       }
     }
-
-    final inAppReview = InAppReview.instance;
-    final available = await inAppReview.isAvailable();
-    return available;
+    return true;
   }
 
   /// Calls the native in-app review (Play Store / App Store) and records the request date.
-  static Future<void> requestReview() async {
+  static Future<bool> requestReview() async {
     try {
-      await InAppReview.instance.requestReview();
+      // Reliable behavior: always open app store listing for rating.
+      await InAppReview.instance.openStoreListing();
       LocalStorage.setLastReviewRequestDate(DateTime.now().toIso8601String());
-    } catch (_) {}
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Records that the user chose "Later" so we don't show the dialog again for a while.
