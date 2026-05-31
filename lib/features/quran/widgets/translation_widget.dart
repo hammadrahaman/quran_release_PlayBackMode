@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/storage/local_storage.dart';
 
 class TranslationWidget extends StatelessWidget {
   final String translation;
@@ -36,7 +37,7 @@ class TranslationWidget extends StatelessWidget {
             translation,
             textAlign: TextAlign.left,
             style: TextStyle(
-              fontSize: 17,
+              fontSize: LocalStorage.getTranslationFontSize(),
               height: 1.8,
               color: isDark ? Colors.grey[200] : Colors.grey[800],
               fontWeight: FontWeight.w400,

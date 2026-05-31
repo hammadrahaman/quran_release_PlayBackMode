@@ -49,6 +49,8 @@ flutter:
   assets:
     - assets/data/quran/quran_arabic.json
     - assets/data/quran/quran_english.json
+    - assets/images/mosque_light.png
+    - assets/images/mosque_dark.png
 
   fonts:
     - family: IndoPak

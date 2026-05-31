@@ -14,8 +14,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   int dailyGoal = 5;
   bool isDarkMode = false;
   double arabicFontSize = 32.0;
+  double translationFontSize = 17.0;
   String appVersion = '1.0.0';
   String playMode = 'manual';
+
   static const String _privacyPolicy = '''Privacy Policy - Iqra Quran Daily
 
 Iqra Quran Daily is developed to help users read, listen to, and track their daily Quran recitation in a respectful and distraction-free environment.
@@ -76,67 +78,256 @@ Contact Us
 If you have any questions or concerns regarding this Privacy Policy, please contact us at:
 hafsarahman007@gmail.com.
 ''';
-  static const String _hasanatDisclaimer =
-      'Hasanat values shown in the app are estimates intended for motivation and self-tracking only. Actual reward is known only to Allah.';
 
   @override
   void initState() {
     super.initState();
-    loadSettings();
+    _loadSettings();
   }
 
-  Future<void> loadSettings() async {
+  Future<void> _loadSettings() async {
     final info = await PackageInfo.fromPlatform();
     if (mounted) {
       setState(() {
         dailyGoal = LocalStorage.getDailyGoal();
         isDarkMode = LocalStorage.isDarkMode();
         arabicFontSize = LocalStorage.getArabicFontSize();
-        playMode = LocalStorage.getPlayMode(); // ✅ NEW
+        translationFontSize = LocalStorage.getTranslationFontSize();
+        playMode = LocalStorage.getPlayMode();
         appVersion = info.version;
       });
     }
   }
 
-  void updateDailyGoal(int change) {
+  void _updateDailyGoal(int delta) {
     setState(() {
-      dailyGoal = (dailyGoal + change).clamp(1, 50);
+      dailyGoal = (dailyGoal + delta).clamp(1, 50);
       LocalStorage.setDailyGoal(dailyGoal);
     });
   }
 
-  void updateFontSize(double change) {
-    setState(() {
-      arabicFontSize = (arabicFontSize + change).clamp(20.0, 60.0);
-      LocalStorage.setArabicFontSize(arabicFontSize);
-    });
-  }
-
-  void showResetDialog() {
+  void _showResetDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         title: const Text('Reset Progress'),
         content: const Text(
           'Are you sure you want to reset all your progress? This action cannot be undone.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(ctx),
             child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () {
-                LocalStorage.resetAllReadingStats();
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Progress reset')),
-                );
-                },
-            child: const Text(
-              'Reset',
-              style: TextStyle(color: Colors.red),
+              LocalStorage.resetAllReadingStats();
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Progress reset')),
+              );
+            },
+            child: const Text('Reset', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFontSizeSheet({required bool isArabic}) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _FontSizeSheet(
+        isArabic: isArabic,
+        initialValue: isArabic ? arabicFontSize : translationFontSize,
+        onChanged: (val) {
+          setState(() {
+            if (isArabic) {
+              arabicFontSize = val;
+              LocalStorage.setArabicFontSize(val);
+            } else {
+              translationFontSize = val;
+              LocalStorage.setTranslationFontSize(val);
+            }
+          });
+        },
+      ),
+    );
+  }
+
+  void _showReadingStatsSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => const _ReadingStatsSheet(),
+    );
+  }
+
+  void _showStreakSheet() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final green = isDark ? const Color(0xFF3CAF6E) : const Color(0xFF2D7A4F);
+    final bg = isDark ? const Color(0xFF1A2E20) : Colors.white;
+    final textPrimary = isDark ? Colors.white : const Color(0xFF1C1C1E);
+    final textSecondary = isDark ? Colors.white60 : const Color(0xFF666666);
+
+    final streak = LocalStorage.getCurrentStreak();
+    final todayKey = LocalStorage.dateKey();
+    final completed = LocalStorage.isCompleted(todayKey);
+
+    showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white24 : Colors.black12,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
             ),
+            Row(
+              children: [
+                const Text('🔥', style: TextStyle(fontSize: 22)),
+                const SizedBox(width: 8),
+                Text(
+                  '$streak Day Streak',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: textPrimary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              completed
+                  ? 'Great job! Goal completed today.'
+                  : streak == 0
+                      ? 'Keep going! You can do it.'
+                      : "You're on a roll! Keep it up.",
+              style: TextStyle(fontSize: 13, color: textSecondary),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+                  .map((d) => Expanded(
+                        child: Center(
+                          child: Text(d,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: textSecondary,
+                                fontWeight: FontWeight.w600,
+                              )),
+                        ),
+                      ))
+                  .toList(),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: List.generate(7, (i) {
+                final day = DateTime.now().subtract(Duration(days: 6 - i));
+                final dk = LocalStorage.dateKey(day);
+                final done = LocalStorage.isCompleted(dk);
+                return Expanded(
+                  child: Center(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: done ? green : Colors.transparent,
+                        border: done
+                            ? null
+                            : Border.all(
+                                color: isDark ? Colors.white24 : Colors.black12,
+                                width: 1.5,
+                              ),
+                      ),
+                      child: done
+                          ? const Icon(Icons.star_rounded,
+                              color: Colors.white, size: 14)
+                          : null,
+                    ),
+                  ),
+                );
+              }),
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showPrivacyPolicy() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Privacy Policy'),
+        content: SingleChildScrollView(child: Text(_privacyPolicy)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAboutDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Iqra Quran Daily'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: const Color(0xFF2D7A4F).withOpacity(0.12),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(Icons.menu_book_rounded,
+                  color: Color(0xFF2D7A4F), size: 32),
+            ),
+            const SizedBox(height: 12),
+            Text('Version $appVersion',
+                style: const TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            const Text(
+              'A daily Quran companion to help you read, listen, and track your progress.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
           ),
         ],
       ),
@@ -146,292 +337,1077 @@ hafsarahman007@gmail.com.
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+    final green = isDark ? const Color(0xFF3CAF6E) : const Color(0xFF2D7A4F);
+    final bg = isDark ? const Color(0xFF0D1B12) : const Color(0xFFF5F5F5);
+    final cardBg = isDark ? const Color(0xFF1A2E20) : Colors.white;
+    final textPrimary = isDark ? Colors.white : const Color(0xFF1C1C1E);
+    final textSecondary = isDark ? Colors.white60 : const Color(0xFF666666);
+    final dividerColor = isDark ? Colors.white10 : Colors.black12;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        centerTitle: true,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(24),
-        children: [
-          const SizedBox(height: 20),
-          const Text(
-            'Playback Mode',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      backgroundColor: bg,
+      body: SafeArea(
+        bottom: false,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            18, 0, 18,
+            MediaQuery.of(context).padding.bottom + 16,
           ),
-          const SizedBox(height: 10),
-
-          RadioListTile<String>(
-            title: const Text('Manual Reading'),
-            value: 'manual',
-            groupValue: playMode,
-            onChanged: (value) {
-              setState(() {
-                playMode = value!;
-                LocalStorage.setPlayMode(playMode);
-              });
-            },
-          ),
-
-          RadioListTile<String>(
-            title: const Text('Continuous Recitation'),
-            subtitle: const Text('Auto play next ayah'),
-            value: 'auto',
-            groupValue: playMode,
-            onChanged: (value) {
-              setState(() {
-                playMode = value!;
-                LocalStorage.setPlayMode(playMode);
-              });
-            },
-          ),
-
-          RadioListTile<String>(
-            title: const Text('Repeat Ayah'),
-            subtitle: const Text('For memorization'),
-            value: 'repeat',
-            groupValue: playMode,
-            onChanged: (value) {
-              setState(() {
-                playMode = value!;
-                LocalStorage.setPlayMode(playMode);
-              });
-            },
-          ),
-          Text(
-            'Daily goal',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.grey,
-                ),
-          ),
-          const SizedBox(height: 16),
-
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            decoration: BoxDecoration(
-              color: isDark ? Colors.grey[900] : Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isDark ? Colors.grey[800]! : Colors.grey[300]!,
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.remove_circle_outline),
-                  onPressed: () => updateDailyGoal(-1),
-                  iconSize: 32,
-                  color: Colors.teal,
-                ),
-                Column(
-                  children: [
-                    Text(
-                      '$dailyGoal',
-                      style: const TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Text(
-                      'ayahs per day',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-                IconButton(
-                  icon: const Icon(Icons.add_circle_outline),
-                  onPressed: () => updateDailyGoal(1),
-                  iconSize: 32,
-                  color: Colors.teal,
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 32),
-
-          // Font Size
-          Text(
-            'Arabic font size',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.grey,
-                ),
-          ),
-          const SizedBox(height: 16),
-
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            decoration: BoxDecoration(
-              color: isDark ? Colors.grey[900] : Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isDark ? Colors.grey[800]! : Colors.grey[300]!,
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.text_decrease),
-                  onPressed: () => updateFontSize(-2),
-                  iconSize: 28,
-                  color: Colors.teal,
-                ),
-                Column(
-                  children: [
-                    Text(
-                      '${arabicFontSize.toInt()}',
-                      style: const TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Text(
-                      'font size',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-                IconButton(
-                  icon: const Icon(Icons.text_increase),
-                  onPressed: () => updateFontSize(2),
-                  iconSize: 28,
-                  color: Colors.teal,
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 32),
-
-          // Theme
-          Text(
-            'Theme',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.grey,
-                ),
-          ),
-          const SizedBox(height: 16),
-
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            decoration: BoxDecoration(
-              color: isDark ? Colors.grey[900] : Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isDark ? Colors.grey[800]! : Colors.grey[300]!,
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      isDarkMode ? Icons.dark_mode : Icons.light_mode,
-                      color: Colors.teal,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      isDarkMode ? 'Dark Mode' : 'Light Mode',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-                Switch(
-                  value: isDarkMode,
-                  onChanged: (value) {
-                    setState(() {
-                      isDarkMode = value;
-                    });
-                    QuranCompanionApp.of(context)?.toggleTheme();
-                  },
-                  activeColor: Colors.teal,
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 32),
-
-          // Reset Progress
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: OutlinedButton(
-              onPressed: showResetDialog,
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.red),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'Reset progress',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.red,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 32),
-
-          // App info
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(
+              // Header
+              SizedBox(
+                height: 120,
+                child: Stack(
+                  clipBehavior: Clip.hardEdge,
+                  children: [
+                    Positioned(
+                      right: -10,
+                      top: 0,
+                      bottom: 0,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Opacity(
+                          opacity: 0.85,
+                          child: Image.asset(
+                            isDark
+                                ? 'assets/images/mosque_dark.png'
+                                : 'assets/images/mosque_light.png',
+                            height: 120,
+                            width: 160,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [
+                              bg,
+                              bg,
+                              bg.withOpacity(0.85),
+                              Colors.transparent,
+                            ],
+                            stops: const [0.0, 0.45, 0.65, 1.0],
+                          ),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Settings',
+                            style: TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.w900,
+                              color: textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Customize your Quran journey',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              // ── Reading Experience ──
+              _SectionHeader(
+                icon: Icons.menu_book_rounded,
+                label: 'Reading Experience',
+                green: green,
+                textPrimary: textPrimary,
+              ),
+              const SizedBox(height: 8),
+              _SettingsCard(
+                isDark: isDark,
+                cardBg: cardBg,
+                dividerColor: dividerColor,
+                children: [
+                  _PlayModeRow(
+                    icon: Icons.menu_book_outlined,
+                    title: 'Manual Reading',
+                    subtitle: 'Read ayahs at your own pace',
+                    value: 'manual',
+                    groupValue: playMode,
+                    green: green,
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
+                    onTap: () => setState(() {
+                      playMode = 'manual';
+                      LocalStorage.setPlayMode('manual');
+                    }),
+                  ),
+                  _PlayModeRow(
+                    icon: Icons.play_arrow_rounded,
+                    title: 'Continuous Recitation',
+                    subtitle: 'Auto play next ayah',
+                    value: 'auto',
+                    groupValue: playMode,
+                    green: green,
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
+                    onTap: () => setState(() {
+                      playMode = 'auto';
+                      LocalStorage.setPlayMode('auto');
+                    }),
+                  ),
+                  _PlayModeRow(
+                    icon: Icons.repeat_rounded,
+                    title: 'Repeat Ayah',
+                    subtitle: 'Repeat current ayah for memorization',
+                    value: 'repeat',
+                    groupValue: playMode,
+                    green: green,
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
+                    onTap: () => setState(() {
+                      playMode = 'repeat';
+                      LocalStorage.setPlayMode('repeat');
+                    }),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              // ── Daily Goal ──
+              _SectionHeader(
+                icon: Icons.track_changes_rounded,
+                label: 'Daily Goal',
+                green: green,
+                textPrimary: textPrimary,
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                decoration: BoxDecoration(
+                  color: cardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isDark ? Colors.white10 : Colors.black12,
+                  ),
+                ),
                 child: Column(
                   children: [
                     Text(
-                      'Iqra Quran Daily',
+                      'Ayahs per day',
                       style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 14,
+                        fontSize: 13,
+                        color: textSecondary,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Version $appVersion',
-                      style: TextStyle(
-                        color: Colors.grey[700],
-                        fontSize: 12,
-                      ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _GoalButton(
+                          icon: Icons.remove,
+                          green: green,
+                          isDark: isDark,
+                          onTap: () => _updateDailyGoal(-1),
+                        ),
+                        Column(
+                          children: [
+                            Text(
+                              '$dailyGoal',
+                              style: TextStyle(
+                                fontSize: 44,
+                                fontWeight: FontWeight.w900,
+                                color: green,
+                                height: 1.0,
+                              ),
+                            ),
+                            Icon(Icons.menu_book_rounded,
+                                size: 16, color: green.withOpacity(0.5)),
+                          ],
+                        ),
+                        _GoalButton(
+                          icon: Icons.add,
+                          green: green,
+                          isDark: isDark,
+                          onTap: () => _updateDailyGoal(1),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-              Text(
-                _privacyPolicy,
-                textAlign: TextAlign.left,
-                style:
-                    Theme.of(context).textTheme.bodySmall?.copyWith(height: 1.4),
+
+              const SizedBox(height: 20),
+
+              // ── Appearance ──
+              _SectionHeader(
+                icon: Icons.palette_rounded,
+                label: 'Appearance',
+                green: green,
+                textPrimary: textPrimary,
               ),
-              const SizedBox(height: 16),
-              Text(
-                _hasanatDisclaimer,
-                textAlign: TextAlign.left,
-                style:
-                    Theme.of(context).textTheme.bodySmall?.copyWith(height: 1.4),
+              const SizedBox(height: 8),
+              _SettingsCard(
+                isDark: isDark,
+                cardBg: cardBg,
+                dividerColor: dividerColor,
+                children: [
+                  _SettingsRow(
+                    icon: isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                    title: 'Theme',
+                    trailing: Text(
+                      isDarkMode ? 'Dark' : 'Light',
+                      style: TextStyle(
+                        color: green,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    green: green,
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
+                    isDark: isDark,
+                    onTap: () {
+                      setState(() => isDarkMode = !isDarkMode);
+                      QuranCompanionApp.of(context)?.toggleTheme();
+                    },
+                  ),
+                  _SettingsRow(
+                    icon: Icons.text_fields_rounded,
+                    title: 'Arabic Font Size',
+                    trailing: _ChevronValue(
+                        value: arabicFontSize.toInt().toString(),
+                        textSecondary: textSecondary),
+                    green: green,
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
+                    isDark: isDark,
+                    onTap: () => _showFontSizeSheet(isArabic: true),
+                  ),
+                  _SettingsRow(
+                    icon: Icons.translate_rounded,
+                    title: 'Translation Font Size',
+                    trailing: _ChevronValue(
+                        value: translationFontSize.toInt().toString(),
+                        textSecondary: textSecondary),
+                    green: green,
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
+                    isDark: isDark,
+                    onTap: () => _showFontSizeSheet(isArabic: false),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              // ── Data & Progress ──
+              _SectionHeader(
+                icon: Icons.bar_chart_rounded,
+                label: 'Data & Progress',
+                green: green,
+                textPrimary: textPrimary,
+              ),
+              const SizedBox(height: 8),
+              _SettingsCard(
+                isDark: isDark,
+                cardBg: cardBg,
+                dividerColor: dividerColor,
+                children: [
+                  _SettingsRow(
+                    icon: Icons.insert_chart_outlined_rounded,
+                    title: 'Reading Statistics',
+                    green: green,
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
+                    isDark: isDark,
+                    onTap: _showReadingStatsSheet,
+                  ),
+                  _SettingsRow(
+                    icon: Icons.bookmark_outline_rounded,
+                    title: 'Bookmarks',
+                    green: green,
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
+                    isDark: isDark,
+                    onTap: () =>
+                        MainNavigationScreen.of(context)?.switchTab(2),
+                  ),
+                  _SettingsRow(
+                    icon: Icons.local_fire_department_rounded,
+                    title: 'Reading Streak',
+                    green: green,
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
+                    isDark: isDark,
+                    onTap: _showStreakSheet,
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              // ── About ──
+              _SectionHeader(
+                icon: Icons.info_outline_rounded,
+                label: 'About',
+                green: green,
+                textPrimary: textPrimary,
+              ),
+              const SizedBox(height: 8),
+              _SettingsCard(
+                isDark: isDark,
+                cardBg: cardBg,
+                dividerColor: dividerColor,
+                children: [
+                  _SettingsRow(
+                    icon: Icons.shield_outlined,
+                    title: 'Privacy Policy',
+                    green: green,
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
+                    isDark: isDark,
+                    onTap: _showPrivacyPolicy,
+                  ),
+                  _SettingsRow(
+                    icon: Icons.info_outline_rounded,
+                    title: 'About Iqra Quran Daily',
+                    trailing: _ChevronValue(
+                        value: 'v$appVersion',
+                        textSecondary: textSecondary),
+                    green: green,
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
+                    isDark: isDark,
+                    onTap: _showAboutDialog,
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              // ── Reset Progress ──
+              GestureDetector(
+                onTap: _showResetDialog,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.red.withOpacity(0.12)
+                        : Colors.red.withOpacity(0.06),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.red.withOpacity(isDark ? 0.3 : 0.2),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.delete_outline_rounded,
+                            color: Colors.red, size: 20),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Reset Progress',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.red,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'This will clear all your reading progress',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.red.withOpacity(0.7),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.chevron_right_rounded,
+                          color: Colors.red.withOpacity(0.6), size: 20),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// Reusable sub-widgets
+// ─────────────────────────────────────────────
+
+class _SectionHeader extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color green;
+  final Color textPrimary;
+
+  const _SectionHeader({
+    required this.icon,
+    required this.label,
+    required this.green,
+    required this.textPrimary,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, color: green, size: 18),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+            color: textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SettingsCard extends StatelessWidget {
+  final List<Widget> children;
+  final bool isDark;
+  final Color cardBg;
+  final Color dividerColor;
+
+  const _SettingsCard({
+    required this.children,
+    required this.isDark,
+    required this.cardBg,
+    required this.dividerColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = <Widget>[];
+    for (int i = 0; i < children.length; i++) {
+      rows.add(children[i]);
+      if (i < children.length - 1) {
+        rows.add(Divider(height: 1, color: dividerColor, indent: 54));
+      }
+    }
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.white10 : Colors.black12,
+        ),
+      ),
+      child: Column(children: rows),
+    );
+  }
+}
+
+class _SettingsRow extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final Widget? trailing;
+  final Color green;
+  final Color textPrimary;
+  final Color textSecondary;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _SettingsRow({
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    this.trailing,
+    required this.green,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: green.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Icon(icon, color: green, size: 18),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: textPrimary,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(subtitle!,
+                        style: TextStyle(fontSize: 12, color: textSecondary)),
+                  ],
+                ],
+              ),
+            ),
+            if (trailing != null) trailing!,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PlayModeRow extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String value;
+  final String groupValue;
+  final Color green;
+  final Color textPrimary;
+  final Color textSecondary;
+  final VoidCallback onTap;
+
+  const _PlayModeRow({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.groupValue,
+    required this.green,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = value == groupValue;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: green.withOpacity(selected ? 0.18 : 0.08),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon,
+                  color: selected ? green : green.withOpacity(0.5), size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: textPrimary,
+                      )),
+                  const SizedBox(height: 2),
+                  Text(subtitle,
+                      style: TextStyle(fontSize: 12, color: textSecondary)),
+                ],
+              ),
+            ),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: selected ? green : textSecondary.withOpacity(0.4),
+                  width: 2,
+                ),
+                color: selected ? green : Colors.transparent,
+              ),
+              child: selected
+                  ? const Icon(Icons.check, color: Colors.white, size: 14)
+                  : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GoalButton extends StatelessWidget {
+  final IconData icon;
+  final Color green;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _GoalButton({
+    required this.icon,
+    required this.green,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 52,
+        height: 52,
+        decoration: BoxDecoration(
+          color: green.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: green.withOpacity(0.25)),
+        ),
+        child: Icon(icon, color: green, size: 24),
+      ),
+    );
+  }
+}
+
+class _ChevronValue extends StatelessWidget {
+  final String value;
+  final Color textSecondary;
+
+  const _ChevronValue({required this.value, required this.textSecondary});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(value,
+            style: TextStyle(
+              fontSize: 14,
+              color: textSecondary,
+              fontWeight: FontWeight.w500,
+            )),
+        const SizedBox(width: 4),
+        Icon(Icons.chevron_right_rounded, color: textSecondary, size: 18),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// Font Size Sheet
+// ─────────────────────────────────────────────
+
+class _FontSizeSheet extends StatefulWidget {
+  final bool isArabic;
+  final double initialValue;
+  final ValueChanged<double> onChanged;
+
+  const _FontSizeSheet({
+    required this.isArabic,
+    required this.initialValue,
+    required this.onChanged,
+  });
+
+  @override
+  State<_FontSizeSheet> createState() => _FontSizeSheetState();
+}
+
+class _FontSizeSheetState extends State<_FontSizeSheet> {
+  late double _value;
+
+  @override
+  void initState() {
+    super.initState();
+    _value = widget.initialValue;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final green = isDark ? const Color(0xFF3CAF6E) : const Color(0xFF2D7A4F);
+    final bg = isDark ? const Color(0xFF1A2E20) : Colors.white;
+    final textPrimary = isDark ? Colors.white : const Color(0xFF1C1C1E);
+    final textSecondary = isDark ? Colors.white60 : const Color(0xFF666666);
+    final previewBg = isDark ? const Color(0xFF0D1B12) : const Color(0xFFF5F5F5);
+
+    final minVal = widget.isArabic ? 20.0 : 12.0;
+    final maxVal = widget.isArabic ? 60.0 : 28.0;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        20, 16, 20,
+        MediaQuery.of(context).padding.bottom + 20,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40, height: 4,
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.white24 : Colors.black12,
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+          Text(
+            widget.isArabic ? 'Arabic Font Size' : 'Translation Font Size',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: textPrimary,
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Live preview
+          Container(
+            width: double.infinity,
+            constraints: const BoxConstraints(minHeight: 80, maxHeight: 160),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: previewBg,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: SingleChildScrollView(
+              child: widget.isArabic
+                  ? Text(
+                      'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ',
+                      textAlign: TextAlign.center,
+                      textDirection: TextDirection.rtl,
+                      style: TextStyle(
+                        fontFamily: 'IndoPak',
+                        fontSize: _value,
+                        height: 2.0,
+                        color: textPrimary,
+                      ),
+                    )
+                  : Text(
+                      'In the Name of Allah, the Most Compassionate, Most Merciful.',
+                      textAlign: TextAlign.left,
+                      style: TextStyle(
+                        fontSize: _value,
+                        height: 1.6,
+                        color: textPrimary,
+                      ),
+                    ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          Row(
+            children: [
+              Text(
+                '${minVal.toInt()}',
+                style: TextStyle(fontSize: 12, color: textSecondary),
+              ),
+              Expanded(
+                child: SliderTheme(
+                  data: SliderThemeData(
+                    activeTrackColor: green,
+                    inactiveTrackColor: green.withOpacity(0.2),
+                    thumbColor: green,
+                    overlayColor: green.withOpacity(0.15),
+                    trackHeight: 3,
+                  ),
+                  child: Slider(
+                    value: _value,
+                    min: minVal,
+                    max: maxVal,
+                    divisions: ((maxVal - minVal) / 2).round(),
+                    onChanged: (v) {
+                      setState(() => _value = v);
+                      widget.onChanged(v);
+                    },
+                  ),
+                ),
+              ),
+              Text(
+                '${maxVal.toInt()}',
+                style: TextStyle(fontSize: 12, color: textSecondary),
+              ),
+            ],
+          ),
+
+          Text(
+            '${_value.toInt()} pt',
+            style: TextStyle(
+              fontSize: 13,
+              color: green,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: green,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+                elevation: 0,
+              ),
+              child: const Text('Done',
+                  style: TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w700)),
+            ),
+          ),
         ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// Reading Stats Sheet
+// ─────────────────────────────────────────────
+
+class _ReadingStatsSheet extends StatelessWidget {
+  const _ReadingStatsSheet();
+
+  String _fmtSeconds(int s) {
+    if (s <= 0) return '0m';
+    final m = s ~/ 60;
+    final sec = s % 60;
+    if (m == 0) return '${sec}s';
+    if (sec == 0) return '${m}m';
+    return '${m}m ${sec}s';
+  }
+
+  String _fmtNum(int v) {
+    if (v >= 1000000) return '${(v / 1000000).toStringAsFixed(v >= 10000000 ? 0 : 1)}M';
+    if (v >= 1000) return '${(v / 1000).toStringAsFixed(v >= 10000 ? 0 : 1)}K';
+    return '$v';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final green = isDark ? const Color(0xFF3CAF6E) : const Color(0xFF2D7A4F);
+    final bg = isDark ? const Color(0xFF1A2E20) : Colors.white;
+    final textPrimary = isDark ? Colors.white : const Color(0xFF1C1C1E);
+
+    final todayKey = LocalStorage.dateKey();
+
+    final tabs = ['Today', 'Week', 'All-time'];
+    final data = [
+      {
+        'hasanat': LocalStorage.getDailyHasanat(todayKey),
+        'verses': LocalStorage.getDailyAyahsRead(todayKey),
+        'seconds': LocalStorage.getDailySeconds(todayKey),
+      },
+      {
+        'hasanat': LocalStorage.getWeeklyHasanat(),
+        'verses': LocalStorage.getWeeklyAyahsRead(),
+        'seconds': LocalStorage.getWeeklySeconds(),
+      },
+      {
+        'hasanat': LocalStorage.getAllTimeHasanat(),
+        'verses': LocalStorage.getAllTimeAyahsRead(),
+        'seconds': LocalStorage.getAllTimeSeconds(),
+      },
+    ];
+
+    return DefaultTabController(
+      length: 3,
+      child: Container(
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).padding.bottom + 20,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40, height: 4,
+              margin: const EdgeInsets.only(top: 12, bottom: 16),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white24 : Colors.black12,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                'Reading Statistics',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: textPrimary,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TabBar(
+              indicatorColor: green,
+              labelColor: green,
+              unselectedLabelColor:
+                  isDark ? Colors.white38 : Colors.grey,
+              indicatorSize: TabBarIndicatorSize.label,
+              tabs: tabs.map((t) => Tab(text: t)).toList(),
+            ),
+            SizedBox(
+              height: 180,
+              child: TabBarView(
+                children: List.generate(3, (i) {
+                  final d = data[i];
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                    child: Row(
+                      children: [
+                        _StatTile(
+                          icon: Icons.favorite_rounded,
+                          iconColor: green,
+                          label: 'Hasanat',
+                          value: _fmtNum(d['hasanat'] as int),
+                          textPrimary: textPrimary,
+                          isDark: isDark,
+                        ),
+                        const SizedBox(width: 10),
+                        _StatTile(
+                          icon: Icons.article_rounded,
+                          iconColor: const Color(0xFF06B6D4),
+                          label: 'Verses',
+                          value: _fmtNum(d['verses'] as int),
+                          textPrimary: textPrimary,
+                          isDark: isDark,
+                        ),
+                        const SizedBox(width: 10),
+                        _StatTile(
+                          icon: Icons.access_time_rounded,
+                          iconColor: const Color(0xFFF59E0B),
+                          label: 'Time',
+                          value: _fmtSeconds(d['seconds'] as int),
+                          textPrimary: textPrimary,
+                          isDark: isDark,
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatTile extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String label;
+  final String value;
+  final Color textPrimary;
+  final bool isDark;
+
+  const _StatTile({
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+    required this.value,
+    required this.textPrimary,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.04),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: iconColor, size: 22),
+            const SizedBox(height: 10),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                color: textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: iconColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

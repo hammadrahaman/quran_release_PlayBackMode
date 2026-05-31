@@ -18,20 +18,20 @@ class BismillahHeader extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF0F1414) : Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.teal.withOpacity(0.25)),
+        border: Border.all(color: const Color(0xFF2D7A4F).withOpacity(0.25)),
       ),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.teal.withOpacity(0.18),
+              color: const Color(0xFF2D7A4F).withOpacity(0.18),
               borderRadius: BorderRadius.circular(999),
             ),
             child: const Text(
               'Bismillah',
               style: TextStyle(
-                color: Colors.teal,
+                color: const Color(0xFF2D7A4F),
                 fontWeight: FontWeight.w700,
                 fontSize: 12,
                 letterSpacing: 0.2,

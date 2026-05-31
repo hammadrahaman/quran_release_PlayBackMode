@@ -149,7 +149,8 @@ class _SurahListScreenState extends State<SurahListScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = isDark ? const Color(0xFF121417) : const Color(0xFFF2F7F6);
     final card = isDark ? const Color(0xFF1B1E23) : Colors.white;
-    final chip = isDark ? const Color(0xFF2A2D33) : const Color(0xFFD7ECEC);
+    final chip = isDark ? const Color(0xFF1F3A28) : const Color(0xFFD4EDDA);
+    const green = Color(0xFF2D7A4F);
     final textPrimary = isDark
         ? const Color(0xFFF1F3F6)
         : const Color(0xFF1F2937);
@@ -195,7 +196,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
               style: TextStyle(color: textPrimary),
               decoration: InputDecoration(
                 hintText: 'Search Surah by name or number...',
-                prefixIcon: Icon(Icons.search, color: Colors.teal),
+                prefixIcon: Icon(Icons.search, color: green),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
                         icon: Icon(Icons.clear, color: textSecondary),
@@ -219,7 +220,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: Colors.teal, width: 1.4),
+                  borderSide: const BorderSide(color: green, width: 1.4),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,

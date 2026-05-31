@@ -24,8 +24,7 @@ class AyahNavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const accent = Color(0xFF2563EB); // blue
-    const accent2 = Color(0xFF7C3AED); // violet
+    const accent = Color(0xFF2D7A4F); // green
 
     final isLandscape =
         MediaQuery.of(context).orientation == Orientation.landscape;
@@ -41,7 +40,7 @@ class AyahNavigationBar extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0B0F1A) : Colors.white,
+        color: isDark ? const Color(0xFF0D1B12) : Colors.white,
         border: Border(
           top: BorderSide(
             color: isDark ? Colors.white10 : Colors.black12,
@@ -76,11 +75,7 @@ class AyahNavigationBar extends StatelessWidget {
                 height: buttonHeight,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [accent, accent2],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                    ),
+                    color: accent,
                     borderRadius: BorderRadius.circular(999),
                     boxShadow: [
                       BoxShadow(

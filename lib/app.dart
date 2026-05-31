@@ -58,12 +58,17 @@ class QuranCompanionAppState extends State<QuranCompanionApp> {
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
 
+  static MainNavigationScreenState? of(BuildContext context) =>
+      context.findAncestorStateOfType<MainNavigationScreenState>();
+
   @override
-  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
+  State<MainNavigationScreen> createState() => MainNavigationScreenState();
 }
 
-class _MainNavigationScreenState extends State<MainNavigationScreen> {
+class MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
+
+  void switchTab(int index) => setState(() => _currentIndex = index);
 
   final List<Widget> _screens = const [
     HomeScreen(),
@@ -87,22 +92,24 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           });
         },
         type: BottomNavigationBarType.fixed,
-        backgroundColor: isDark ? Colors.grey[900] : Colors.white,
-        selectedItemColor: Colors.teal,
-        unselectedItemColor: Colors.grey,
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
+        backgroundColor: isDark ? const Color(0xFF0D1B12) : Colors.white,
+        selectedItemColor: isDark ? const Color(0xFF3CAF6E) : const Color(0xFF2D7A4F),
+        unselectedItemColor: isDark ? Colors.white38 : Colors.grey,
+        showSelectedLabels: true,
+        showUnselectedLabels: true,
+        selectedFontSize: 11,
+        unselectedFontSize: 11,
         elevation: 8,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
             activeIcon: Icon(Icons.home),
-            label: 'Today',
+            label: 'Home',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.menu_book_outlined),
             activeIcon: Icon(Icons.menu_book),
-            label: 'Quran',
+            label: 'Surah',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.bookmark_outline),

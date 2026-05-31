@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
+  static const primaryGreenLight = Color(0xFF2D7A4F);
+  static const primaryGreenDark = Color(0xFF3CAF6E);
+
   static ThemeData dark() {
-    const background = Color(0xFF0E0E0E);
-    const surface = Color(0xFF1C1C1E);
+    const background = Color(0xFF0D1B12);
+    const surface = Color(0xFF1A2E20);
     const primaryText = Color(0xFFEDEDED);
     const secondaryText = Color(0xFFB3B3B3);
-    const accentTeal = Color(0xFF4DB8A6);
+    const primaryGreen = primaryGreenDark;
 
     return ThemeData(
       brightness: Brightness.dark,
@@ -17,7 +20,7 @@ class AppTheme {
       colorScheme: const ColorScheme.dark(
         background: background,
         surface: surface,
-        primary: accentTeal,
+        primary: primaryGreen,
         onPrimary: Colors.white,
         onBackground: primaryText,
         onSurface: primaryText,
@@ -58,7 +61,7 @@ class AppTheme {
 
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: accentTeal,
+          backgroundColor: primaryGreen,
           foregroundColor: Colors.white,
           disabledBackgroundColor: surface,
           disabledForegroundColor: secondaryText,
@@ -88,7 +91,7 @@ class AppTheme {
     const surface = Color(0xFFFFFFFF);
     const primaryText = Color(0xFF1C1C1E);
     const secondaryText = Color(0xFF666666);
-    const accentTeal = Color(0xFF4DB8A6);
+    const primaryGreen = primaryGreenLight;
 
     return ThemeData(
       brightness: Brightness.light,
@@ -98,7 +101,7 @@ class AppTheme {
       colorScheme: const ColorScheme.light(
         background: background,
         surface: surface,
-        primary: accentTeal,
+        primary: primaryGreen,
         onPrimary: Colors.white,
         onBackground: primaryText,
         onSurface: primaryText,
@@ -140,7 +143,7 @@ class AppTheme {
 
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: accentTeal,
+          backgroundColor: primaryGreen,
           foregroundColor: Colors.white,
           disabledBackgroundColor: Colors.grey[300],
           disabledForegroundColor: secondaryText,

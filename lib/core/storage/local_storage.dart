@@ -28,6 +28,12 @@ class LocalStorage {
   static void setArabicFontSize(double size) =>
       _settings.put('arabicFontSize', size);
 
+  // Font Size (for Translation text)
+  static double getTranslationFontSize() =>
+      _settings.get('translationFontSize', defaultValue: 17.0);
+  static void setTranslationFontSize(double size) =>
+      _settings.put('translationFontSize', size);
+
   // Progress tracking (completed day)
   static bool isCompleted(String dateKey) =>
       _progress.get(dateKey, defaultValue: false);

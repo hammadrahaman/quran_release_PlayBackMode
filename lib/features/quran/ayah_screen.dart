@@ -42,6 +42,7 @@ class _AyahScreenState extends State<AyahScreen> {
   final Set<int> _sessionGlobalAyahs = {};
   int _sessionHasanat = 0;
   bool _isHandlingCompletion = false;
+  bool _timeSaved = false;
 
   StreamSubscription<PlayerState>? _playerSub;
 
@@ -102,6 +103,10 @@ class _AyahScreenState extends State<AyahScreen> {
     _playerSub?.cancel();
     AudioService.stop();
     _scrollController.dispose();
+    if (!_timeSaved) {
+      final seconds = DateTime.now().difference(_sessionStart).inSeconds;
+      if (seconds > 0) LocalStorage.addReadingSeconds(seconds);
+    }
     super.dispose();
   }
 
@@ -391,13 +396,13 @@ class _AyahScreenState extends State<AyahScreen> {
     }
 
     // Save reading time
+    _timeSaved = true;
     final seconds = DateTime.now().difference(_sessionStart).inSeconds;
     LocalStorage.addReadingSeconds(seconds);
 
     if (!mounted) return;
 
-    const accent = Color(0xFF2563EB); // blue
-    const accent2 = Color(0xFF7C3AED); // violet
+    const accent = Color(0xFF2D7A4F); // green
 
     final action = await showModalBottomSheet<String>(
       context: context,
@@ -415,8 +420,8 @@ class _AyahScreenState extends State<AyahScreen> {
                 borderRadius: BorderRadius.circular(24),
                 gradient: LinearGradient(
                   colors: isDark
-                      ? const [Color(0xFF0B0F1A), Color(0xFF141B33)]
-                      : const [Colors.white, Color(0xFFF3F6FF)],
+                      ? const [Color(0xFF0D1B12), Color(0xFF1A2E20)]
+                      : const [Colors.white, Color(0xFFF0FAF4)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -447,7 +452,7 @@ class _AyahScreenState extends State<AyahScreen> {
                       height: 62,
                       decoration: const BoxDecoration(
                         shape: BoxShape.circle,
-                        gradient: LinearGradient(colors: [accent, accent2]),
+                        color: accent,
                       ),
                       child: const Icon(
                         Icons.auto_awesome,
@@ -570,7 +575,7 @@ class _AyahScreenState extends State<AyahScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const accent = Color(0xFF2563EB);
+    const accent = Color(0xFF2D7A4F);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final ayahInSurah = (surahDetail == null)
@@ -617,9 +622,9 @@ class _AyahScreenState extends State<AyahScreen> {
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-             colors: isDark
-                ? const [Color(0xFF438FD2), Color(0xFF1C1B24)]
-                : const [Color(0xFF4A2D6F), Color(0xFF1C1B24)],
+            colors: isDark
+                ? const [Color(0xFF1B4332), Color(0xFF0D1B12)]
+                : const [Color(0xFFF5F5F5), Color(0xFFF5F5F5)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -707,7 +712,7 @@ class _AyahScreenState extends State<AyahScreen> {
                                             size: 28,
                                           ),
                                           color: bookmarked
-                                              ? const Color(0xFF7C3AED)
+                                              ? const Color(0xFF2D7A4F)
                                               : (isDark
                                                   ? Colors.white70
                                                   : Colors.black54),
