@@ -11,7 +11,11 @@ class AudioService {
 
   static Stream<PlayerState> get playerStateStream =>
       _audioPlayer.playerStateStream;
+  static Stream<Duration> get positionStream => _audioPlayer.positionStream;
+  static Stream<Duration?> get durationStream => _audioPlayer.durationStream;
   static bool get isPlaying => _audioPlayer.playing;
+
+  static Future<void> seek(Duration position) => _audioPlayer.seek(position);
 
   static Future<void> playAyah(int globalAyahNumber) async {
     try {

@@ -38,6 +38,9 @@ dependencies:
   # Audio
   just_audio: ^0.9.36
 
+  # Share
+  share_plus: ^10.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

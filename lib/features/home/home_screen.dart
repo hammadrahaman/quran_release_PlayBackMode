@@ -852,24 +852,25 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Day labels
+                    // Day labels — derived from actual dates so they always match the dots
                     Row(
-                      children: const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-                          .map(
-                            (d) => Expanded(
-                              child: Center(
-                                child: Text(
-                                  d,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: textSecondary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
+                      children: List.generate(7, (i) {
+                        final day = DateTime.now().subtract(Duration(days: 6 - i));
+                        const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                        final label = names[day.weekday - 1];
+                        return Expanded(
+                          child: Center(
+                            child: Text(
+                              label,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: textSecondary,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                          )
-                          .toList(),
+                          ),
+                        );
+                      }),
                     ),
                     const SizedBox(height: 8),
 

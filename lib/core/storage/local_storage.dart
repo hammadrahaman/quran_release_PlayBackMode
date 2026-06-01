@@ -109,6 +109,45 @@ class LocalStorage {
   static int getBookmarksCount() => _bookmarks.length;
 
   // ----------------------------
+  // Favorites (stored in _bookmarks box with 'fav:' prefix)
+  // ----------------------------
+
+  static String _getFavKey(int surahNumber, int ayahNumber) =>
+      'fav:$surahNumber:$ayahNumber';
+
+  static void addFavorite({
+    required int surahNumber,
+    required int ayahNumber,
+    required String surahName,
+  }) {
+    final key = _getFavKey(surahNumber, ayahNumber);
+    _bookmarks.put(key, {
+      'surahNumber': surahNumber,
+      'ayahNumber': ayahNumber,
+      'surahName': surahName,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
+  }
+
+  static void removeFavorite(int surahNumber, int ayahNumber) =>
+      _bookmarks.delete(_getFavKey(surahNumber, ayahNumber));
+
+  static bool isFavorited(int surahNumber, int ayahNumber) =>
+      _bookmarks.containsKey(_getFavKey(surahNumber, ayahNumber));
+
+  static List<Map<String, dynamic>> getAllFavorites() {
+    final list = <Map<String, dynamic>>[];
+    for (final key in _bookmarks.keys) {
+      if (key is String && key.startsWith('fav:')) {
+        final v = _bookmarks.get(key);
+        if (v != null) list.add(Map<String, dynamic>.from(v));
+      }
+    }
+    list.sort((a, b) => b['timestamp'].compareTo(a['timestamp']));
+    return list;
+  }
+
+  // ----------------------------
   // Date helpers
   // ----------------------------
 
