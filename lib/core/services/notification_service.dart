@@ -58,19 +58,31 @@ class NotificationService {
   /* -------------------- DAILY MESSAGES -------------------- */
 
   static final List<String> _quranMessages = [
-    'Open the Qur’an. Allah is waiting to speak to you 🤍📖',
-    'A few verses today can change your heart forever ✨',
-    'Recite, reflect, repeat — your soul needs it 🌿',
-    'The Qur’an is not rushed. Take your time today 📖',
-    'Let Allah’s words calm your heart today 🤲',
+    'Whoever reads a letter from the Book of Allah will receive a Hasanah (good deed) — [Tirmidhi 2910] 📖',
+    'The best of you are those who learn the Qur\'an and teach it — [Bukhari 5027] 🌿',
+    'The one who is proficient in reciting the Qur\'an will be with the noble, dutiful scribes — [Muslim 798] ✨',
+    'A house in which the Qur\'an is recited is spacious for its people — [Ibn Hibban, Sahih] 🤲',
+    'Recite the Qur\'an, for it will come as an intercessor for its companions on the Day of Resurrection — [Muslim 804] 🤍',
   ];
 
   static final List<String> _hadithMessages = [
-    '“The best among you are those who learn the Qur’an and teach it.” (Bukhari)',
-    '“The Qur’an will come as an intercessor for its reciter.” (Muslim)',
-    '“Read the Qur’an, for it will intercede for its companions.” (Muslim)',
-    '“Whoever recites a letter from the Book of Allah gets a reward.” (Tirmidhi)',
-    '“Allah elevates people through this Book.” (Muslim)',
+    'Actions are by intentions — [Bukhari 1, Muslim 1907] 🌱',
+    'Make things easy, do not make them difficult — [Bukhari 69] ☀️',
+    'None of you truly believes until he loves for his brother what he loves for himself — [Bukhari 13] 🤝',
+    'The strong man is not the one who can overpower others. The strong man is the one who controls himself when angry — [Bukhari 6114] 💪',
+    'Speak good or remain silent — [Bukhari 6018] 🤐',
+    'Cleanliness is half of faith — [Muslim 223] ✨',
+    'Whoever removes a worldly hardship from a believer, Allah will remove a hardship from him on the Day — [Muslim 2699] 🌿',
+    'Do not belittle any good deed, even meeting your brother with a cheerful face — [Muslim 2626] 😊',
+    'Pay the worker his wages before his sweat dries — [Ibn Majah 2443, Hasan] 💼',
+    'The merciful are shown mercy by the Most Merciful — be merciful to those on earth — [Tirmidhi 1924] 🤲',
+  ];
+
+  static final List<String> _streakMessages = [
+    'The most beloved deeds to Allah are those done consistently, even if small — [Bukhari 6464] 🔥',
+    'Take up good deeds only as much as you are able — [Ibn Majah 4240] 📈',
+    'Be steadfast — Allah does not waste the reward of the good-doers — [Qur\'an 11:115] 🌟',
+    'Whoever guides someone to goodness will have a reward like the one who did it — [Muslim 1893] 🎯',
   ];
 
   static String _randomMessage(List<String> list) {
@@ -86,15 +98,15 @@ class NotificationService {
     required int hadithHour,
     required int hadithMinute,
   }) async {
-    // Qur’an Reminder
+    // Qur'an Reminder
     await _notifications.zonedSchedule(
       1,
-      'Time for Qur’an 📖',
+      'Time for Qur\'an 📖',
       _randomMessage(_quranMessages),
       _nextInstanceOfTime(quranHour, quranMinute),
       _notificationDetails(
         channelId: 'quran_channel',
-        channelName: 'Qur’an Reminder',
+        channelName: 'Qur\'an Reminder',
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
@@ -204,22 +216,8 @@ class NotificationService {
     );
   }
 
-  static String _getMotivationalMessage(int days) {
-    if (days == 1) {
-      return 'Great start! The journey begins with one step 🚶';
-    } else if (days == 3) {
-      return '3-day streak! You’re building a beautiful habit 📚';
-    } else if (days == 7) {
-      return 'One week! Your consistency is inspiring 🌟';
-    } else if (days == 14) {
-      return 'Two weeks! Keep the momentum going 🔥';
-    } else if (days == 30) {
-      return 'One month! MashaAllah, amazing dedication 🎉';
-    } else if (days % 10 == 0) {
-      return '$days days strong! Your effort is seen by Allah 🤲';
-    }
-    return 'Day $days complete. Keep reciting 📖';
-  }
+  static String _getMotivationalMessage(int days) =>
+      _randomMessage(_streakMessages);
 
   /* -------------------- HELPERS -------------------- */
 

@@ -67,54 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (playInfo != null &&
         PlayStoreUpdateService.isUpdateAvailable(playInfo) &&
         mounted) {
-      final latestCode = playInfo.availableVersionCode;
-      final latest = latestCode != null ? 'v$latestCode' : 'new';
-      final dismissedKey = 'play_$latest';
-      final immediate = PlayStoreUpdateService.isImmediateAllowed(playInfo);
-      final flexible = PlayStoreUpdateService.isFlexibleAllowed(playInfo);
-      final isForced = immediate && !flexible;
-
-      if (!isForced &&
-          LocalStorage.getLastDismissedUpdateVersion() == dismissedKey) {
-        return;
-      }
-
-      showDialog<void>(
-        context: context,
-        barrierDismissible: !isForced,
-        builder: (ctx) => PopScope(
-          canPop: !isForced,
-          child: AlertDialog(
-            title: const Text('Update available'),
-            content: Text(
-              isForced
-                  ? 'A required update is available. Please update to continue.'
-                  : 'A newer app version is available on Play Store.',
-            ),
-            actions: [
-              if (!isForced)
-                TextButton(
-                  onPressed: () {
-                    LocalStorage.setLastDismissedUpdateVersion(dismissedKey);
-                    Navigator.of(ctx).pop();
-                  },
-                  child: const Text('Later'),
-                ),
-              FilledButton(
-                onPressed: () async {
-                  Navigator.of(ctx).pop();
-                  final updated =
-                      await PlayStoreUpdateService.performImmediateUpdate();
-                  if (!updated) {
-                    await UpdateCheckService.openStore(null);
-                  }
-                },
-                child: const Text('Update'),
-              ),
-            ],
-          ),
-        ),
-      );
+      await PlayStoreUpdateService.performImmediateUpdate();
       return;
     }
 
