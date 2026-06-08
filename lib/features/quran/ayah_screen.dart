@@ -168,6 +168,19 @@ class _AyahScreenState extends State<AyahScreen> {
     }
   }
 
+  void _markDone() {
+    if (surahDetail == null) return;
+    final ayahInSurah = surahDetail!.ayahs[currentAyahIndex].numberInSurah;
+    LocalStorage.saveLastRead(widget.surahNumber, ayahInSurah);
+    setState(() {});
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Progress saved — ${widget.surahName} : Ayah $ayahInSurah'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   void _toggleBookmark() {
     if (surahDetail == null) return;
     final ayahInSurah = surahDetail!.ayahs[currentAyahIndex].numberInSurah;
@@ -515,6 +528,9 @@ class _AyahScreenState extends State<AyahScreen> {
     final totalAyahs = surahDetail?.ayahs.length ?? 0;
     final bookmarked = LocalStorage.isBookmarked(widget.surahNumber, ayahInSurah);
     final favorited = LocalStorage.isFavorited(widget.surahNumber, ayahInSurah);
+    final lastRead = LocalStorage.getLastRead();
+    final isDone = lastRead['surah'] == widget.surahNumber &&
+        lastRead['ayah'] == ayahInSurah;
 
     final originalAyahText = surahDetail?.ayahs[currentAyahIndex].text ?? '';
     final showInlineBismillah = widget.surahNumber != 1 &&
@@ -743,10 +759,12 @@ class _AyahScreenState extends State<AyahScreen> {
                       canGoNext: true,
                       isFavorited: favorited,
                       isBookmarked: bookmarked,
+                      isCompleted: isDone,
                       onPrevious: previousAyah,
                       onNext: nextAyah,
                       onFavorite: _toggleFavorite,
                       onBookmark: _toggleBookmark,
+                      onComplete: _markDone,
                       isDark: isDark,
                     ),
                   ],

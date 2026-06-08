@@ -5,10 +5,12 @@ class AyahNavigationBar extends StatelessWidget {
   final bool canGoNext;
   final bool isFavorited;
   final bool isBookmarked;
+  final bool isCompleted;
   final VoidCallback onPrevious;
   final VoidCallback onNext;
   final VoidCallback onFavorite;
   final VoidCallback onBookmark;
+  final VoidCallback onComplete;
   final bool isDark;
 
   const AyahNavigationBar({
@@ -17,10 +19,12 @@ class AyahNavigationBar extends StatelessWidget {
     required this.canGoNext,
     required this.isFavorited,
     required this.isBookmarked,
+    required this.isCompleted,
     required this.onPrevious,
     required this.onNext,
     required this.onFavorite,
     required this.onBookmark,
+    required this.onComplete,
     required this.isDark,
   });
 
@@ -75,6 +79,18 @@ class AyahNavigationBar extends StatelessWidget {
                 label: 'Favorite',
                 color: isFavorited ? Colors.red : textSecondary,
                 onTap: onFavorite,
+              ),
+
+              const SizedBox(width: 16),
+
+              // Done (mark reading position)
+              _BarButton(
+                icon: isCompleted
+                    ? Icons.check_circle_rounded
+                    : Icons.check_circle_outline_rounded,
+                label: 'Done',
+                color: isCompleted ? green : textSecondary,
+                onTap: onComplete,
               ),
 
               const SizedBox(width: 16),
