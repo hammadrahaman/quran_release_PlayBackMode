@@ -19,12 +19,16 @@ class AyahScreen extends StatefulWidget {
   final int surahNumber;
   final String surahName;
   final int initialAyahIndex;
+  final bool isFromRecitation;
+  final VoidCallback? onSurahCompleted;
 
   const AyahScreen({
     super.key,
     required this.surahNumber,
     required this.surahName,
     this.initialAyahIndex = 0,
+    this.isFromRecitation = false,
+    this.onSurahCompleted,
   });
 
   @override
@@ -280,13 +284,21 @@ class _AyahScreenState extends State<AyahScreen> {
     final moved = await _advanceToNextAyah();
     if (moved) return;
     await _playCompletionCelebration();
+    widget.onSurahCompleted?.call();
     final shouldContinue = await SurahCompletionDialog.show(
       context: context,
       surahName: widget.surahName,
       nextSurahNumber: widget.surahNumber + 1,
-      hasNextSurah: widget.surahNumber < 114,
+      hasNextSurah: widget.isFromRecitation || widget.surahNumber < 114,
+      primaryButtonLabel: widget.isFromRecitation ? 'Back to Recitations' : null,
     );
-    if (shouldContinue) await goToNextSurah();
+    if (shouldContinue) {
+      if (widget.isFromRecitation && mounted) {
+        Navigator.pop(context);
+      } else {
+        await goToNextSurah();
+      }
+    }
   }
 
   Future<void> previousAyah() async {

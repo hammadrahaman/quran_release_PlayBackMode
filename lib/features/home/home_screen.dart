@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../../core/storage/local_storage.dart';
@@ -15,10 +16,15 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  Timer? _recitationTimer;
+
   @override
   void initState() {
     super.initState();
     ReviewService.recordAppOpen();
+    _recitationTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (mounted) setState(() {});
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _maybeShowUpdateDialog();
       if (!mounted) return;
@@ -26,6 +32,12 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!mounted) return;
       await _maybeShowReview();
     });
+  }
+
+  @override
+  void dispose() {
+    _recitationTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _maybeShowReview() async {
@@ -124,6 +136,15 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  _RecitationMode _recitationMode() {
+    final now = DateTime.now();
+    final hour = now.hour;
+    final isFriday = now.weekday == DateTime.friday;
+    if (isFriday && hour >= 12 && hour < 19) return _RecitationMode.friday;
+    if (hour >= 19 || hour == 0) return _RecitationMode.night;
+    return _RecitationMode.none;
   }
 
   Future<void> _continueReading() async {
@@ -337,11 +358,15 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: bg,
       body: SafeArea(
         bottom: false,
-        child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(
-            18, 16, 18,
-            MediaQuery.of(context).padding.bottom + 12,
-          ),
+        child: RefreshIndicator(
+          color: green,
+          onRefresh: () async => setState(() {}),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(
+              18, 16, 18,
+              MediaQuery.of(context).padding.bottom + 12,
+            ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -758,6 +783,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
+              // Recitation section (time-gated)
+              Builder(builder: (_) {
+                final mode = _recitationMode();
+                if (mode == _RecitationMode.none) return const SizedBox.shrink();
+                return Column(
+                  children: [
+                    const SizedBox(height: 12),
+                    _RecitationSection(mode: mode, isDark: isDark),
+                  ],
+                );
+              }),
+
               const SizedBox(height: 12),
 
               // Streak card
@@ -901,6 +938,343 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Recitation section
+// ─────────────────────────────────────────────────────────────
+
+enum _RecitationMode { none, night, friday }
+
+class _RecItem {
+  final String id;
+  final String displayName;
+  final String arabic;
+  final String? subtitle;
+  final int surahNumber;
+  final String surahName;
+  final int initialAyahIndex;
+  const _RecItem({
+    required this.id,
+    required this.displayName,
+    required this.arabic,
+    this.subtitle,
+    required this.surahNumber,
+    required this.surahName,
+    required this.initialAyahIndex,
+  });
+}
+
+const _nightItems = <_RecItem>[
+  _RecItem(id: 'mulk', displayName: 'Surah Al-Mulk', arabic: 'الملك', surahNumber: 67, surahName: 'Al-Mulk', initialAyahIndex: 0),
+  _RecItem(id: 'baqarah', displayName: 'Surah Al-Baqarah', arabic: 'البقرة', subtitle: 'Last 2 Ayahs (285–286)', surahNumber: 2, surahName: 'Al-Baqarah', initialAyahIndex: 284),
+  _RecItem(id: 'ikhlas', displayName: 'Surah Al-Ikhlas', arabic: 'الإخلاص', surahNumber: 112, surahName: 'Al-Ikhlas', initialAyahIndex: 0),
+  _RecItem(id: 'falaq', displayName: 'Surah Al-Falaq', arabic: 'الفلق', surahNumber: 113, surahName: 'Al-Falaq', initialAyahIndex: 0),
+  _RecItem(id: 'nas', displayName: 'Surah An-Nas', arabic: 'الناس', surahNumber: 114, surahName: 'An-Nas', initialAyahIndex: 0),
+];
+
+const _fridayItems = <_RecItem>[
+  _RecItem(id: 'kahf', displayName: 'Surah Al-Kahf', arabic: 'الكهف', surahNumber: 18, surahName: 'Al-Kahf', initialAyahIndex: 0),
+  _RecItem(id: 'jumuah', displayName: "Surah Al-Jumu'ah", arabic: 'الجمعة', surahNumber: 62, surahName: "Al-Jumu'ah", initialAyahIndex: 0),
+];
+
+class _RecitationSection extends StatefulWidget {
+  final _RecitationMode mode;
+  final bool isDark;
+
+  const _RecitationSection({required this.mode, required this.isDark});
+
+  @override
+  State<_RecitationSection> createState() => _RecitationSectionState();
+}
+
+class _RecitationSectionState extends State<_RecitationSection> {
+  late List<String> _completedList;
+
+  bool get _isFriday => widget.mode == _RecitationMode.friday;
+  String get _storageType => _isFriday ? 'friday' : 'night';
+  String get _dateKey => LocalStorage.dateKey();
+  List<_RecItem> get _items => _isFriday ? _fridayItems : _nightItems;
+
+  // Design tokens
+  static const _greenAccent = Color(0xFF22C55E);
+  static const _goldAccent = Color(0xFFD4AF37);
+  static const _titleLight = Color(0xFF111827);
+  static const _subtitleLight = Color(0xFF6B7280);
+  static const _trackLight = Color(0xFFE5E7EB);
+  static const _incompleteLight = Color(0xFFD1D5DB);
+  static const _cardDark = Color(0xFF101B2A);
+  static const _borderDark = Color(0xFF1E293B);
+  static const _subtitleDark = Color(0xFF94A3B8);
+  static const _incompleteDark = Color(0xFF475569);
+
+  Color get _accent => _isFriday ? _goldAccent : _greenAccent;
+
+  @override
+  void initState() {
+    super.initState();
+    _completedList = LocalStorage.getCompletedRecitations(_storageType, _dateKey);
+  }
+
+  @override
+  void didUpdateWidget(_RecitationSection old) {
+    super.didUpdateWidget(old);
+    if (old.mode != widget.mode) {
+      _completedList = LocalStorage.getCompletedRecitations(_storageType, _dateKey);
+    }
+  }
+
+  void _toggle(String id) {
+    LocalStorage.toggleRecitation(_storageType, _dateKey, id);
+    setState(() {
+      _completedList = LocalStorage.getCompletedRecitations(_storageType, _dateKey);
+    });
+  }
+
+  void _markDone(String id) {
+    if (_completedList.contains(id)) return;
+    LocalStorage.toggleRecitation(_storageType, _dateKey, id);
+    setState(() {
+      _completedList = LocalStorage.getCompletedRecitations(_storageType, _dateKey);
+    });
+  }
+
+  void _openItem(_RecItem item) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AyahScreen(
+          surahNumber: item.surahNumber,
+          surahName: item.surahName,
+          initialAyahIndex: item.initialAyahIndex,
+          isFromRecitation: true,
+          onSurahCompleted: () => _markDone(item.id),
+        ),
+      ),
+    );
+  }
+
+  void _openNextIncomplete() {
+    final next = _items.firstWhere(
+      (it) => !_completedList.contains(it.id),
+      orElse: () => _items.first,
+    );
+    _openItem(next);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = widget.isDark;
+    final total = _items.length;
+    final done = _completedList.length;
+    final progress = total == 0 ? 0.0 : done / total;
+    final isAllDone = done >= total;
+    final accent = _accent;
+
+    final cardBg = isDark ? _cardDark : Colors.white;
+    final titleColor = isDark ? Colors.white : _titleLight;
+    final subtitleColor = isDark ? _subtitleDark : _subtitleLight;
+    final trackColor = isDark ? _borderDark : _trackLight;
+    final incompleteColor = isDark ? _incompleteDark : _incompleteLight;
+
+    final title = _isFriday ? 'Friday Recitations' : 'Night Recitations';
+    final icon = _isFriday ? '🕌' : '🌙';
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(20),
+        border: isDark ? Border.all(color: _borderDark) : null,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.0 : 0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Header ──
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(icon, style: const TextStyle(fontSize: 22)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: titleColor,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      isAllDone
+                          ? '✨ Completed'
+                          : '$done of $total completed',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: isAllDone ? accent : subtitleColor,
+                        fontWeight: isAllDone ? FontWeight.w600 : FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // ── Progress bar + % ──
+          Row(
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 10,
+                    backgroundColor: trackColor,
+                    valueColor: AlwaysStoppedAnimation<Color>(accent),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                '${(progress * 100).round()}%',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: accent,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // ── Items ──
+          ...List.generate(_items.length, (i) {
+            final item = _items[i];
+            final isDone = _completedList.contains(item.id);
+            return Column(
+              children: [
+                if (i > 0)
+                  Divider(height: 1, color: isDark ? _borderDark : _trackLight),
+                InkWell(
+                  onTap: () => _openItem(item),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Row(
+                      children: [
+                        // Toggle circle
+                        GestureDetector(
+                          onTap: () => _toggle(item.id),
+                          behavior: HitTestBehavior.opaque,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            width: 20,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: isDone ? accent : Colors.transparent,
+                              border: isDone
+                                  ? null
+                                  : Border.all(color: incompleteColor, width: 1.5),
+                            ),
+                            child: isDone
+                                ? Icon(Icons.check_rounded,
+                                    color: Colors.white, size: 13)
+                                : null,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        // Name
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.displayName,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: titleColor,
+                                  decoration: isDone ? TextDecoration.lineThrough : null,
+                                  decorationColor: subtitleColor,
+                                ),
+                              ),
+                              if (item.subtitle != null)
+                                Text(
+                                  item.subtitle!,
+                                  style: TextStyle(fontSize: 12, color: subtitleColor),
+                                ),
+                            ],
+                          ),
+                        ),
+                        // Arabic
+                        Text(
+                          item.arabic,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontFamily: 'IndoPak',
+                            color: subtitleColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }),
+
+          const SizedBox(height: 16),
+
+          // ── Footer ──
+          if (isAllDone)
+            Center(
+              child: Text(
+                'May Allah accept your recitation.',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontStyle: FontStyle.italic,
+                  color: subtitleColor,
+                ),
+              ),
+            )
+          else
+            GestureDetector(
+              onTap: _openNextIncomplete,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    'Continue Reading',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: accent,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(Icons.arrow_forward_rounded, color: accent, size: 18),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }

@@ -5,9 +5,15 @@ import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
 
+// Top-level handler required by flutter_local_notifications for background taps.
+@pragma('vm:entry-point')
+void _onBackgroundNotificationResponse(NotificationResponse details) {}
+
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
+
+  static void Function(String payload)? onNotificationTap;
 
   /* -------------------- INITIALIZE -------------------- */
 
@@ -37,7 +43,14 @@ class NotificationService {
       iOS: iosSettings,
     );
 
-    await _notifications.initialize(settings);
+    await _notifications.initialize(
+      settings,
+      onDidReceiveNotificationResponse: (details) {
+        final payload = details.payload;
+        if (payload != null) onNotificationTap?.call(payload);
+      },
+      onDidReceiveBackgroundNotificationResponse: _onBackgroundNotificationResponse,
+    );
 
     final androidPlugin = _notifications.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
@@ -259,6 +272,57 @@ class NotificationService {
         presentSound: true,
       ),
     );
+  }
+
+  /* -------------------- NIGHT RECITATION -------------------- */
+
+  static Future<void> scheduleNightRecitationReminder() async {
+    await _notifications.zonedSchedule(
+      4001,
+      'Night Recitation 🌙',
+      'Time for your nightly recitations — Al-Mulk, Al-Ikhlas & more.',
+      _nextInstanceOfTime(19, 0),
+      _notificationDetails(
+        channelId: 'night_recitation_channel',
+        channelName: 'Night Recitation',
+      ),
+      payload: 'night_recitation',
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+  }
+
+  /* -------------------- FRIDAY RECITATION -------------------- */
+
+  static Future<void> scheduleFridayRecitationReminder() async {
+    await _notifications.zonedSchedule(
+      4002,
+      "Jumu'ah Mubarak 🕌",
+      "Don't forget to recite Surah Al-Kahf and Al-Jumu'ah today.",
+      _nextFriday(12, 0),
+      _notificationDetails(
+        channelId: 'friday_recitation_channel',
+        channelName: 'Friday Recitation',
+      ),
+      payload: 'friday_recitation',
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+    );
+  }
+
+  static tz.TZDateTime _nextFriday(int hour, int minute) {
+    var candidate = tz.TZDateTime.now(tz.local);
+    candidate = tz.TZDateTime(
+        tz.local, candidate.year, candidate.month, candidate.day, hour, minute);
+    while (candidate.weekday != DateTime.friday ||
+        !candidate.isAfter(tz.TZDateTime.now(tz.local))) {
+      candidate = candidate.add(const Duration(days: 1));
+    }
+    return candidate;
   }
 
   /* -------------------- CANCEL -------------------- */

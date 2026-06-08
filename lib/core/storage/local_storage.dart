@@ -353,4 +353,25 @@ class LocalStorage {
       _settings.get('lastDismissedUpdateVersion', defaultValue: null) as String?;
   static void setLastDismissedUpdateVersion(String version) =>
       _settings.put('lastDismissedUpdateVersion', version);
+
+  // ----------------------------
+  // Recitation progress
+  // ----------------------------
+
+  static String _recitationKey(String type, String dk) => 'recitation:$type:$dk';
+
+  static List<String> getCompletedRecitations(String type, String dk) {
+    final v = _settings.get(_recitationKey(type, dk), defaultValue: <String>[]);
+    return List<String>.from(v as List);
+  }
+
+  static void toggleRecitation(String type, String dk, String id) {
+    final list = getCompletedRecitations(type, dk);
+    if (list.contains(id)) {
+      list.remove(id);
+    } else {
+      list.add(id);
+    }
+    _settings.put(_recitationKey(type, dk), list);
+  }
 }

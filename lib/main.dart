@@ -21,6 +21,8 @@ void main() async {
     // Brief delay so Android can show permission dialog and user can accept before we schedule.
     await Future.delayed(const Duration(milliseconds: 1500));
     await NotificationService.scheduleEvery3HoursReminder();
+    await NotificationService.scheduleNightRecitationReminder();
+    await NotificationService.scheduleFridayRecitationReminder();
   } catch (e) {
     debugPrint('NotificationService.scheduleEvery3HoursReminder failed: $e');
   }

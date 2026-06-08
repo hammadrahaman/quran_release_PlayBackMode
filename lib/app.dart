@@ -6,9 +6,12 @@ import 'features/progress/progress_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'core/theme/app_theme.dart';
 import 'core/storage/local_storage.dart';
+import 'core/services/notification_service.dart';
 
 class QuranCompanionApp extends StatefulWidget {
   const QuranCompanionApp({super.key});
+
+  static final navigatorKey = GlobalKey<NavigatorState>();
 
   static QuranCompanionAppState? of(BuildContext context) =>
       context.findAncestorStateOfType<QuranCompanionAppState>();
@@ -24,6 +27,11 @@ class QuranCompanionAppState extends State<QuranCompanionApp> {
   void initState() {
     super.initState();
     _loadThemeMode();
+    NotificationService.onNotificationTap = (payload) {
+      final context = QuranCompanionApp.navigatorKey.currentContext;
+      if (context == null) return;
+      MainNavigationScreen.of(context)?.switchTab(0);
+    };
   }
 
   void _loadThemeMode() {
@@ -47,6 +55,7 @@ class QuranCompanionAppState extends State<QuranCompanionApp> {
     return MaterialApp(
       title: 'Iqra Quran Daily',
       debugShowCheckedModeBanner: false,
+      navigatorKey: QuranCompanionApp.navigatorKey,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: _themeMode,

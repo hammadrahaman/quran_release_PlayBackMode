@@ -6,6 +6,7 @@ class SurahCompletionDialog {
     required String surahName,
     required int nextSurahNumber,
     required bool hasNextSurah,
+    String? primaryButtonLabel,
   }) async {
     final result = await showDialog<bool>(
       context: context,
@@ -135,7 +136,7 @@ class SurahCompletionDialog {
                                     color: Colors.white),
                                 const SizedBox(width: 10),
                                 Text(
-                                  'Surah $nextSurahNumber',
+                                  primaryButtonLabel ?? 'Surah $nextSurahNumber',
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w900,
