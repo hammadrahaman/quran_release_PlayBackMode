@@ -268,6 +268,102 @@ class QuranAPI {
       return [];
     }
   }
+
+  /// Indo-Pak Juz boundaries (start surah+ayah for each of the 30 Juz).
+  static const List<({int surah, int ayah})> juzStarts = [
+    (surah: 1,  ayah: 1),   (surah: 2,  ayah: 142), (surah: 2,  ayah: 253),
+    (surah: 3,  ayah: 92),  (surah: 4,  ayah: 24),  (surah: 4,  ayah: 148),
+    (surah: 5,  ayah: 83),  (surah: 6,  ayah: 111), (surah: 7,  ayah: 88),
+    (surah: 8,  ayah: 41),  (surah: 9,  ayah: 94),  (surah: 11, ayah: 6),
+    (surah: 12, ayah: 53),  (surah: 15, ayah: 2),   (surah: 17, ayah: 1),
+    (surah: 18, ayah: 75),  (surah: 21, ayah: 1),   (surah: 23, ayah: 1),
+    (surah: 25, ayah: 21),  (surah: 27, ayah: 60),  (surah: 29, ayah: 45),
+    (surah: 33, ayah: 31),  (surah: 36, ayah: 22),  (surah: 39, ayah: 32),
+    (surah: 41, ayah: 47),  (surah: 46, ayah: 1),   (surah: 51, ayah: 31),
+    (surah: 58, ayah: 1),   (surah: 67, ayah: 1),   (surah: 78, ayah: 1),
+  ];
+
+  /// End (surah, ayah) for each of the 30 Juz.
+  static const List<({int surah, int ayah})> _juzEnds = [
+    (surah: 2,  ayah: 141), (surah: 2,  ayah: 252), (surah: 3,  ayah: 91),
+    (surah: 4,  ayah: 23),  (surah: 4,  ayah: 147), (surah: 5,  ayah: 82),
+    (surah: 6,  ayah: 110), (surah: 7,  ayah: 87),  (surah: 8,  ayah: 40),
+    (surah: 9,  ayah: 93),  (surah: 11, ayah: 5),   (surah: 12, ayah: 52),
+    (surah: 15, ayah: 1),   (surah: 16, ayah: 128), (surah: 18, ayah: 74),
+    (surah: 20, ayah: 135), (surah: 22, ayah: 78),  (surah: 25, ayah: 20),
+    (surah: 27, ayah: 59),  (surah: 29, ayah: 44),  (surah: 33, ayah: 30),
+    (surah: 36, ayah: 21),  (surah: 39, ayah: 31),  (surah: 41, ayah: 46),
+    (surah: 45, ayah: 37),  (surah: 51, ayah: 30),  (surah: 57, ayah: 29),
+    (surah: 66, ayah: 12),  (surah: 77, ayah: 50),  (surah: 114, ayah: 6),
+  ];
+
+  static const List<String> _surahEnglishNames = [
+    'Al-Faatiha', 'Al-Baqara', 'Aal-i-Imraan', 'An-Nisaa', 'Al-Maaida',
+    'Al-An\'aam', 'Al-A\'raaf', 'Al-Anfaal', 'At-Tawba', 'Yunus', 'Hud',
+    'Yusuf', 'Ar-Ra\'d', 'Ibrahim', 'Al-Hijr', 'An-Nahl', 'Al-Israa',
+    'Al-Kahf', 'Maryam', 'Taa-Haa', 'Al-Anbiyaa', 'Al-Hajj', 'Al-Muminoon',
+    'An-Noor', 'Al-Furqaan', 'Ash-Shu\'araa', 'An-Naml', 'Al-Qasas',
+    'Al-Ankaboot', 'Ar-Room', 'Luqman', 'As-Sajda', 'Al-Ahzaab', 'Saba',
+    'Faatir', 'Yaseen', 'As-Saaffaat', 'Saad', 'Az-Zumar', 'Ghafir',
+    'Fussilat', 'Ash-Shura', 'Az-Zukhruf', 'Ad-Dukhaan', 'Al-Jaathiya',
+    'Al-Ahqaf', 'Muhammad', 'Al-Fath', 'Al-Hujuraat', 'Qaaf',
+    'Adh-Dhaariyat', 'At-Tur', 'An-Najm', 'Al-Qamar', 'Ar-Rahmaan',
+    'Al-Waaqia', 'Al-Hadid', 'Al-Mujaadila', 'Al-Hashr', 'Al-Mumtahana',
+    'As-Saff', 'Al-Jumu\'a', 'Al-Munaafiqoon', 'At-Taghaabun', 'At-Talaaq',
+    'At-Tahrim', 'Al-Mulk', 'Al-Qalam', 'Al-Haaqqa', 'Al-Ma\'aarij',
+    'Nooh', 'Al-Jinn', 'Al-Muzzammil', 'Al-Muddaththir', 'Al-Qiyaama',
+    'Al-Insaan', 'Al-Mursalaat', 'An-Naba', 'An-Naazi\'aat', 'Abasa',
+    'At-Takwir', 'Al-Infitaar', 'Al-Mutaffifin', 'Al-Inshiqaaq', 'Al-Burooj',
+    'At-Taariq', 'Al-A\'laa', 'Al-Ghaashiya', 'Al-Fajr', 'Al-Balad',
+    'Ash-Shams', 'Al-Lail', 'Ad-Dhuhaa', 'Ash-Sharh', 'At-Tin', 'Al-Alaq',
+    'Al-Qadr', 'Al-Bayyina', 'Az-Zalzala', 'Al-Aadiyaat', 'Al-Qaari\'a',
+    'At-Takaathur', 'Al-Asr', 'Al-Humaza', 'Al-Fil', 'Quraish', 'Al-Maa\'un',
+    'Al-Kawthar', 'Al-Kaafiroon', 'An-Nasr', 'Al-Masad', 'Al-Ikhlaas',
+    'Al-Falaq', 'An-Naas',
+  ];
+
+  /// Returns a flat list of [JuzItem]s (surah dividers + ayahs) for the given
+  /// Juz number (1–30). Returns null on load failure.
+  static Future<List<JuzItem>?> getJuzAyahs(int juzNumber) async {
+    if (juzNumber < 1 || juzNumber > 30) return null;
+    final idx = juzNumber - 1;
+    final start = juzStarts[idx];
+    final end = _juzEnds[idx];
+
+    // Collect which surahs are needed
+    final surahsNeeded = <int>[];
+    for (int s = start.surah; s <= end.surah; s++) {
+      surahsNeeded.add(s);
+    }
+
+    // Fetch all needed surahs concurrently
+    final futures = surahsNeeded.map((s) => getSurahWithTranslation(s));
+    final results = await Future.wait(futures);
+
+    final items = <JuzItem>[];
+    for (int i = 0; i < surahsNeeded.length; i++) {
+      final surahNum = surahsNeeded[i];
+      final detail = results[i];
+      if (detail == null) continue;
+
+      final surahName = surahNum <= _surahEnglishNames.length
+          ? _surahEnglishNames[surahNum - 1]
+          : detail.englishName;
+
+      final startAyah = (surahNum == start.surah) ? start.ayah : 1;
+      final endAyah = (surahNum == end.surah) ? end.ayah : detail.ayahs.length;
+
+      // Surah divider banner
+      items.add(JuzSurahDivider(surahNumber: surahNum, surahName: surahName));
+
+      for (final ayah in detail.ayahs) {
+        if (ayah.numberInSurah >= startAyah && ayah.numberInSurah <= endAyah) {
+          items.add(JuzAyahItem(ayah: ayah, surahNumber: surahNum, surahName: surahName));
+        }
+      }
+    }
+    return items.isEmpty ? null : items;
+  }
 }
 
 // Models
@@ -374,4 +470,22 @@ class Ayah {
     this.translation,
     this.transliteration,
   });
+}
+
+// ─── Juz flat-list model ─────────────────────────────────────────────────────
+
+/// An item in the flat Juz ayah list — either a surah divider or an ayah.
+sealed class JuzItem {}
+
+class JuzSurahDivider extends JuzItem {
+  final int surahNumber;
+  final String surahName;
+  JuzSurahDivider({required this.surahNumber, required this.surahName});
+}
+
+class JuzAyahItem extends JuzItem {
+  final Ayah ayah;
+  final int surahNumber;
+  final String surahName;
+  JuzAyahItem({required this.ayah, required this.surahNumber, required this.surahName});
 }

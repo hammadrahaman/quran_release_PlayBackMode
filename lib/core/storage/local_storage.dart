@@ -10,6 +10,13 @@ class LocalStorage {
 
   static void setPlayMode(String mode) =>
       _settings.put('playMode', mode);
+
+  // Reading Mode: 'ayah' | 'surah' (default)
+  static String getReadingMode() =>
+      _settings.get('readingMode', defaultValue: 'surah');
+
+  static void setReadingMode(String mode) =>
+      _settings.put('readingMode', mode);
   // ----------------------------
   // Existing (keep unchanged APIs)
   // ----------------------------
@@ -353,6 +360,15 @@ class LocalStorage {
       _settings.get('lastDismissedUpdateVersion', defaultValue: null) as String?;
   static void setLastDismissedUpdateVersion(String version) =>
       _settings.put('lastDismissedUpdateVersion', version);
+
+  // ----------------------------
+  // What's New (release notes)
+  // ----------------------------
+
+  static String? getLastSeenWhatsNewVersion() =>
+      _settings.get('lastSeenWhatsNewVersion', defaultValue: null) as String?;
+  static void setLastSeenWhatsNewVersion(String version) =>
+      _settings.put('lastSeenWhatsNewVersion', version);
 
   // ----------------------------
   // Recitation progress

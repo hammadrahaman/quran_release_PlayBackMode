@@ -6,7 +6,9 @@ import '../../core/services/play_store_update_service.dart';
 import '../../core/services/quran_api.dart';
 import '../../core/services/review_service.dart';
 import '../../core/services/update_check_service.dart';
+import '../../core/services/whats_new_service.dart';
 import '../quran/ayah_screen.dart';
+import '../quran/full_surah_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,6 +29,10 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _maybeShowUpdateDialog();
+      if (!mounted) return;
+      await Future.delayed(const Duration(milliseconds: 400));
+      if (!mounted) return;
+      await WhatsNewService.maybeShow(context);
       if (!mounted) return;
       await Future.delayed(const Duration(milliseconds: 400));
       if (!mounted) return;
@@ -155,14 +161,21 @@ class _HomeScreenState extends State<HomeScreen> {
     final surahData = await QuranAPI.getSurahWithTranslation(surahNumber);
 
     if (surahData != null && mounted) {
+      final mode = LocalStorage.getReadingMode();
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => AyahScreen(
-            surahNumber: surahNumber,
-            surahName: surahData.englishName,
-            initialAyahIndex: ayahNumber - 1,
-          ),
+          builder: (context) => mode == 'surah'
+              ? FullSurahScreen(
+                  surahNumber: surahNumber,
+                  surahName: surahData.englishName,
+                  initialAyahIndex: ayahNumber - 1,
+                )
+              : AyahScreen(
+                  surahNumber: surahNumber,
+                  surahName: surahData.englishName,
+                  initialAyahIndex: ayahNumber - 1,
+                ),
         ),
       ).then((_) => setState(() {}));
     }
@@ -1044,16 +1057,23 @@ class _RecitationSectionState extends State<_RecitationSection> {
   }
 
   void _openItem(_RecItem item) {
+    final mode = LocalStorage.getReadingMode();
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => AyahScreen(
-          surahNumber: item.surahNumber,
-          surahName: item.surahName,
-          initialAyahIndex: item.initialAyahIndex,
-          isFromRecitation: true,
-          onSurahCompleted: () => _markDone(item.id),
-        ),
+        builder: (_) => mode == 'surah'
+            ? FullSurahScreen(
+                surahNumber: item.surahNumber,
+                surahName: item.surahName,
+                initialAyahIndex: item.initialAyahIndex,
+              )
+            : AyahScreen(
+                surahNumber: item.surahNumber,
+                surahName: item.surahName,
+                initialAyahIndex: item.initialAyahIndex,
+                isFromRecitation: true,
+                onSurahCompleted: () => _markDone(item.id),
+              ),
       ),
     );
   }

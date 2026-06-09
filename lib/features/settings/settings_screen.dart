@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import '../../core/services/whats_new_service.dart';
 import '../../core/storage/local_storage.dart';
 import '../../app.dart';
 
@@ -17,6 +18,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   double translationFontSize = 17.0;
   String appVersion = '1.0.0';
   String playMode = 'manual';
+  String readingMode = 'ayah';
 
   static const String _privacyPolicy = '''Privacy Policy - Iqra Quran Daily
 
@@ -94,6 +96,7 @@ hafsarahman007@gmail.com.
         arabicFontSize = LocalStorage.getArabicFontSize();
         translationFontSize = LocalStorage.getTranslationFontSize();
         playMode = LocalStorage.getPlayMode();
+        readingMode = LocalStorage.getReadingMode();
         appVersion = info.version;
       });
     }
@@ -489,6 +492,91 @@ hafsarahman007@gmail.com.
                 ],
               ),
 
+              const SizedBox(height: 12),
+
+              // ── Reading Mode ──
+              _SettingsCard(
+                isDark: isDark,
+                cardBg: cardBg,
+                dividerColor: dividerColor,
+                children: [
+                  ListTile(
+                    leading: Icon(Icons.auto_stories_rounded, color: green, size: 22),
+                    title: Text('Reading Mode', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textPrimary)),
+                    subtitle: Text(
+                      readingMode == 'surah' ? 'Full Surah — scrollable view' : 'Ayah by Ayah — classic view',
+                      style: TextStyle(fontSize: 12, color: textSecondary),
+                    ),
+                    trailing: Icon(Icons.chevron_right_rounded, color: textSecondary),
+                    onTap: () {
+                      showModalBottomSheet<void>(
+                        context: context,
+                        backgroundColor: Colors.transparent,
+                        builder: (sheetCtx) => Container(
+                          decoration: BoxDecoration(
+                            color: cardBg,
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                          ),
+                          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Center(
+                                child: Container(
+                                  width: 40, height: 4,
+                                  margin: const EdgeInsets.only(bottom: 20),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? Colors.white24 : Colors.black12,
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                ),
+                              ),
+                              Text('Reading Mode', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: textPrimary)),
+                              const SizedBox(height: 16),
+                              _PlayModeRow(
+                                icon: Icons.menu_book_outlined,
+                                title: 'Ayah by Ayah',
+                                subtitle: 'Classic one-ayah-at-a-time view',
+                                value: 'ayah',
+                                groupValue: readingMode,
+                                green: green,
+                                textPrimary: textPrimary,
+                                textSecondary: textSecondary,
+                                onTap: () {
+                                  setState(() {
+                                    readingMode = 'ayah';
+                                    LocalStorage.setReadingMode('ayah');
+                                  });
+                                  Navigator.pop(sheetCtx);
+                                },
+                              ),
+                              _PlayModeRow(
+                                icon: Icons.auto_stories_rounded,
+                                title: 'Full Surah',
+                                subtitle: 'Scrollable view with all ayahs',
+                                value: 'surah',
+                                groupValue: readingMode,
+                                green: green,
+                                textPrimary: textPrimary,
+                                textSecondary: textSecondary,
+                                onTap: () {
+                                  setState(() {
+                                    readingMode = 'surah';
+                                    LocalStorage.setReadingMode('surah');
+                                  });
+                                  Navigator.pop(sheetCtx);
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+
               const SizedBox(height: 20),
 
               // ── Daily Goal ──
@@ -686,6 +774,18 @@ hafsarahman007@gmail.com.
                     textSecondary: textSecondary,
                     isDark: isDark,
                     onTap: _showPrivacyPolicy,
+                  ),
+                  _SettingsRow(
+                    icon: Icons.auto_awesome_rounded,
+                    title: "What's New",
+                    trailing: _ChevronValue(
+                        value: 'v$appVersion',
+                        textSecondary: textSecondary),
+                    green: green,
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
+                    isDark: isDark,
+                    onTap: () => WhatsNewService.show(context),
                   ),
                   _SettingsRow(
                     icon: Icons.info_outline_rounded,

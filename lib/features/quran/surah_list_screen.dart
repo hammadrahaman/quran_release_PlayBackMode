@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../core/services/quran_api.dart';
 import '../../core/storage/local_storage.dart';
 import 'ayah_screen.dart';
+import 'full_surah_screen.dart';
 
 class SurahListScreen extends StatefulWidget {
   const SurahListScreen({super.key});
@@ -367,14 +368,21 @@ class _SurahListScreenState extends State<SurahListScreen> {
                           onTap: () {
                             _showAyahStartDialog(surah).then((ayah) {
                               if (ayah == null || !context.mounted) return;
+                              final mode = LocalStorage.getReadingMode();
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => AyahScreen(
-                                    surahNumber: surah.number,
-                                    surahName: surah.englishName,
-                                    initialAyahIndex: ayah - 1,
-                                  ),
+                                  builder: (context) => mode == 'surah'
+                                      ? FullSurahScreen(
+                                          surahNumber: surah.number,
+                                          surahName: surah.englishName,
+                                          initialAyahIndex: ayah - 1,
+                                        )
+                                      : AyahScreen(
+                                          surahNumber: surah.number,
+                                          surahName: surah.englishName,
+                                          initialAyahIndex: ayah - 1,
+                                        ),
                                 ),
                               );
                             });

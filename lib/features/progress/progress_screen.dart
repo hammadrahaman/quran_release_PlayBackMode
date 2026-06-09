@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/services/quran_api.dart';
+import '../../core/storage/local_storage.dart';
 import '../quran/ayah_screen.dart';
+import '../quran/full_juz_screen.dart';
 
 /// Traditional names and end references for each Juz (from 1 to 30).
 /// Start references come from [JuzStart]; end references are fixed.
@@ -543,19 +545,38 @@ class _ProgressScreenState extends State<ProgressScreen> {
                             color: isDark ? Colors.white38 : Colors.black45,
                           ),
                           onTap: () {
-                            _showAyahStartDialog(context, juz).then((result) {
-                              if (result == null || !context.mounted) return;
+                            final mode = LocalStorage.getReadingMode();
+                            if (mode == 'surah') {
+                              // Full Juz scrollable mode
+                              final juzIdx = juz.juzNumber - 1;
+                              final juzName = juzIdx >= 0 && juzIdx < _juzNamesAndEnd.length
+                                  ? _juzNamesAndEnd[juzIdx].name
+                                  : 'Juz ${juz.juzNumber}';
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => AyahScreen(
-                                    surahNumber: result.surahNumber,
-                                    surahName: result.surahName,
-                                    initialAyahIndex: result.ayahInSurah - 1,
+                                  builder: (_) => FullJuzScreen(
+                                    juzNumber: juz.juzNumber,
+                                    juzName: juzName,
                                   ),
                                 ),
                               );
-                            });
+                            } else {
+                              // Original ayah-per-page mode — untouched
+                              _showAyahStartDialog(context, juz).then((result) {
+                                if (result == null || !context.mounted) return;
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => AyahScreen(
+                                      surahNumber: result.surahNumber,
+                                      surahName: result.surahName,
+                                      initialAyahIndex: result.ayahInSurah - 1,
+                                    ),
+                                  ),
+                                );
+                              });
+                            }
                           },
                         ),
                       );
